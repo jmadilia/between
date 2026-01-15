@@ -1,10 +1,12 @@
-## Day 1 - Planning & Scope Lock
+## Week 1
+
+### Planning & Scope Lock
 
 - Defined core problem and MVP scope
 - Locked patient and therapist responsibilities
 - Documented insight rules and non-goals
 
-Specific things I thought about:
+Things to consider:
 
 - Users. Should they be split into two different tables? One for the patient, one for the therapist?
   - I landed on keeping these two entities united in **the same Users table**
@@ -35,3 +37,23 @@ Specific things I thought about:
     - engagement overview across caseload
     - patients that need attention soon
   - Keeping therapist data minimal means quicker MVP and a model that supports adding professional context for finer tuned insights later. For the MVP, reflection quality and insight generation are taking precedence.
+
+Things I learned about:
+
+- SQLAlchemy
+  - I had only heard of it before
+  - The concept of two distinct APIs, the Core and ORM, building on top of each other seemed unusual.
+  - My best summary of it:
+    - SQLAlchemy helps to work with databases using Python objects and code by translating the code into SQL instead of writing raw SQL all the time
+    - The Core is focused on the SQL part. It describes the tables and queries in Python, then generates the SQL
+    - The ORM defines the Python classes that represent the database tables. Rows become Python objects, and we interact with the data using attributes and methods instead of joins and `SELECT` statements
+    - Highest abstraction sense: we can write and think in Python, then we're translated to SQL to talk to the database
+
+### Backend Skeleton - Python
+
+- Restructured to `app` and `routers` folders
+- Added SQLAlchemy models: User, Reflection, SessionSummary
+- Created FastAPI routers: users, reflections, session_summaries
+- Set up local PostgreSQL database for testing
+- Set up DB: `session.py` and `init_db.py`
+- Added schemas, `requirements.txt`, and VS Code config
