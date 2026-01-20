@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter()
 
 @router.get("/")
 def list_users():
-  return {"data": ["Users router"]}
+  return []

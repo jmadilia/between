@@ -3,10 +3,17 @@ from routers import users, reflections, session_summaries
 
 app = FastAPI(title="Between API")
 
-app.include_router(users.router)
-app.include_router(reflections.router)
-app.include_router(session_summaries.router)
+def register_routers(app: FastAPI) -> None:
+  app.include_router(users.router, prefix="/users", tags=["users"])
+  app.include_router(reflections.router, prefix="/reflections", tags=["reflections"])
+  app.include_router(
+        session_summaries.router,
+        prefix="/session-summaries",
+        tags=["session-summaries"],
+  )
+
+register_routers(app)
 
 @app.get("/health")
-def health_check():
+def health_check() -> dict:
   return {"status": "ok"}
