@@ -9,6 +9,28 @@
 - `/health` endpoint added
 - App boots cleanly
 
+### API + Validation
+
+- Refactored models into separate files (user.py, reflection.py, session_summary.py)
+  - Cleaner imports and easier to scale
+  - Core models now contains only DeclarativeBase
+- Implemented POST /reflections endpoint (first working API endpoint)
+  - Full CRUD handler with database transaction
+  - Pydantic validation (ReflectionCreate, ReflectionRead schemas)
+  - Proper HTTP status codes and response models
+- Updated database initialization
+  - init_db.py now drops and recreates tables (dev iteration workflow)
+  - Added explicit model imports to ensure registration with Base
+- Fixed configuration
+  - pydantic_settings for Pydantic v2 compatibility
+  - Corrected .env file path resolution
+
+#### Learnings
+
+- Model separation makes test isolation easier
+- Pydantic v2 moved BaseSettings → pydantic_settings (import gotcha)
+- Explicit model imports in init_db.py required for SQLAlchemy to discover models before metadata.create_all()
+
 #### Technical Options Weighed
 
 - Routing structure
