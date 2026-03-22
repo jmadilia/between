@@ -8,6 +8,18 @@ class ReflectionBase(BaseModel):
     min_length=1,
     max_length=5000,
     description="Free-form reflection content",
+  ),
+  mood: int = Field(
+    ...,
+    ge=1,
+    le=5,
+    description="Mood score from 1 to 5",
+  ),
+  symptom_severity: int = Field(
+    ...,
+    ge=1,
+    le=5,
+    description="Symptom severity from 1 to 5"
   )
 
 

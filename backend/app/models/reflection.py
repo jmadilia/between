@@ -21,6 +21,16 @@ class Reflection(Base):
         index=True,
     )
 
+    mood: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    symptom_severity: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
     content: Mapped[str] = mapped_column(
         Text,
         nullable=False,
