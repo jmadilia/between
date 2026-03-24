@@ -9,5 +9,11 @@ __pycache__/
 .env
 venv/
 
+# Alembic
+backend/alembic.ini
+
 # Docs
 docs/SETUP.md
+
+# AI
+.claude
