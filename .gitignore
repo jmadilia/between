@@ -14,6 +14,7 @@ backend/alembic.ini
 
 # Docs
 docs/SETUP.md
+docs/PLAN.md
 
 # AI
 .claude
