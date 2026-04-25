@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import users, reflections, session_summaries
+from routers import users, reflections, session_summaries, insights
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Between API")
@@ -19,6 +19,7 @@ def register_routers(app: FastAPI) -> None:
         prefix="/session-summaries",
         tags=["session-summaries"],
   )
+  app.include_router(insights.router, prefix="/insights", tags=["insights"])
 
 register_routers(app)
 
