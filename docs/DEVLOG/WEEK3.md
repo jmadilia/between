@@ -67,9 +67,39 @@
 
 ---
 
+### Insight Engine v1
+
+- Built `InsightEngine` class in `app/engine/insight_engine.py`
+  - `analyze()` orchestrates all detection methods and returns `{ trends, flags, summary }`
+  - `_detect_mood_trend()` — compares average mood of oldest 2 vs newest 2 reflections; flags if newest is 2+ points lower
+  - `_detect_engagement()` — checks days since last check-in; flags if >3 days
+  - `_detect_keywords()` — scans reflection content for thematic terms (sleep, stress, work, anxiety); flags categories mentioned 2+ times
+  - `_build_summary()` — synthesizes trends and flags into a plain-English paragraph
+- Created `GET /insights/{patient_id}` endpoint in `routers/insights.py`
+  - Queries all reflections for a patient, passes them to `InsightEngine`, returns structured JSON
+- Registered insights router in `main.py`
+
+#### Learnings
+
+- `if __name__ == "__main__"` blocks must be at module level, not inside a class body — Python evaluates class-level code at definition time, so `InsightEngine` doesn't exist yet when the block runs
+- Keyword detection using `any(term in content for term in terms)` is more flexible than exact matching — catches "stressful", "overwhelmed", etc. under the same category
+- Timezone-aware comparisons require `.replace(tzinfo=timezone.utc)` on naive datetimes — mixing naive and aware datetimes raises a TypeError
+- Testing engine logic with `SimpleNamespace` mock objects before wiring up the database is a clean way to validate logic in isolation
+
+#### Technical Options Weighed
+
+- Keyword matching strategy
+  - Considered regex for more precise matching
+  - Kept `in content` substring matching — simpler and sufficient for MVP; can upgrade later
+- Engagement threshold
+  - Considered dynamic thresholds based on session cadence
+  - Hardcoded 3-day threshold for now — easy to parameterize later when real session data exists
+
+---
+
 ### Current Status
 
-- ✅ Backend: Reflection API working, migrations tested, CORS enabled
+- ✅ Backend: Reflection API, migrations, CORS, Insight Engine all working
 - ✅ Frontend: Form scaffold complete, API client wired, data flow end-to-end
-- ⏳ Next: Insight Engine — rule-based analysis of reflection history for pre-session summaries
+- ⏳ Next: Day 7 — cleanup, polish, dead code removal
 
