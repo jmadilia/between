@@ -1,0 +1,75 @@
+## Week 3
+
+### Frontend Scaffold & Patient UI
+
+- Initialized React + TypeScript frontend with Vite
+  - Fast dev server, minimal overhead compared to CRA
+  - TypeScript + React 19.2.4 for type safety and latest event model
+  - Configured eslint for code quality
+- Created `ReflectionForm` component with controlled inputs
+  - Textarea for free-text reflection with empathetic placeholder copy
+  - Two `<input type="range">` sliders for mood (1–5) and symptom severity (1–5)
+  - Real-time value display next to sliders for UX feedback
+  - Proper accessibility: wrapped inputs in `<label>` elements
+  - Hardcoded `PATIENT_ID = 1` for now (auth layer deferred)
+
+#### React 19 Type System Changes
+
+- React 19 deprecates synthetic event wrappers (`React.FormEvent`, `React.SyntheticEvent`)
+- Use native DOM event types instead: `SubmitEvent`, `ChangeEvent`, etc.
+- No import needed — these are standard TypeScript DOM types
+- This removes abstraction layers and aligns React more with native DOM behavior
+
+### API Client & End-to-End Data Flow
+
+- Created `api.ts` with typed axios client
+  - `ReflectionPayload` type matches backend `ReflectionCreate` schema exactly
+  - `submitReflection()` sends POST request to `/reflections/`
+  - Centralized configuration: `baseURL` from env var `VITE_API_URL`
+- Added CORS middleware to FastAPI
+  - Allows requests from `http://localhost:5173` (Vite default port)
+  - Permits all methods and headers for dev iteration
+- Environment configuration
+  - Created `frontend/.env` with `VITE_API_URL=http://127.0.0.1:8000`
+  - Added `.env` to `.gitignore` and committed `.env.example` instead (matching backend pattern with `alembic.ini`)
+
+### Vertical Slice Complete
+
+- Form submission → API call → database insert → 201 response verified in DevTools Network tab
+- Patient can now:
+  1. Enter free-text reflection
+  2. Select mood and symptom severity
+  3. Submit and see confirmation (201 Created)
+- This fulfills Days 4–5 of the original plan (Patient UI + Data Flow)
+
+#### Learnings
+
+- React 19 uses native event types — no need for wrapper types from the React namespace
+- Vite's env var pattern (`VITE_` prefix) is simpler than webpack env injection
+- Axios destructures responses cleanly (`response.data`), reducing boilerplate
+- CORS configuration in FastAPI is straightforward (`CORSMiddleware`) but must be added before routers for proper middleware order
+- `.env` pattern (gitignore + `.example` template) keeps secrets safe while documenting what config is required
+
+#### Technical Options Weighed
+
+- Frontend framework
+  - Considered Next.js (more batteries included, but heavier)
+  - Chose React + Vite (lightweight, fast HMR, minimal scaffold)
+- State management
+  - Considered Redux/Zustand early
+  - Kept `useState` for now — single form doesn't justify global state yet
+- Form library
+  - Installed `react-hook-form` for future use (more complex forms, validation)
+  - Current form is simple enough for vanilla controlled inputs
+- CORS strategy
+  - Considered token-based origin checking
+  - Kept simple allow-list for localhost dev (no auth layer yet)
+
+---
+
+### Current Status
+
+- ✅ Backend: Reflection API working, migrations tested, CORS enabled
+- ✅ Frontend: Form scaffold complete, API client wired, data flow end-to-end
+- ⏳ Next: Insight Engine — rule-based analysis of reflection history for pre-session summaries
+
