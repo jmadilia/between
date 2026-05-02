@@ -7,6 +7,10 @@ from app.models.core_models import Base
 
 
 class Reflection(Base):
+    """Patient reflection between sessions: mood (1-5), symptom severity (1-5), and free-text content.
+
+    The core patient input that powers the insight engine and therapist dashboard.
+    """
     __tablename__ = "reflections"
 
     id: Mapped[int] = mapped_column(

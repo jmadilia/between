@@ -1,7 +1,12 @@
 class InsightEngine:
+  """Rule-based insight engine that analyzes patient reflections to detect mood trends, engagement patterns, and notable themes.
+
+  All logic is deterministic and explainable—no black-box AI, purely pattern matching on mood, timestamps, and keywords.
+  """
+
   def analyze(self, reflections: list) -> dict:
-    """
-    Analyze a list of reflections and return insights.
+    """Analyze reflections and return structured insights: trends, flags, and a plain-language summary.
+
     Returns: { "trends": [...], "flags": [...], "summary": "..." }
     """
     if not reflections:
@@ -39,11 +44,7 @@ class InsightEngine:
     return " ".join(parts)
 
   def _detect_mood_trend(self, reflections: list) -> str | None:
-    """
-    Compare mood across last N reflections.
-    If mood is declining, return "Mood declining over last X check-ins.
-    If stable/improving, return None.
-    """
+    """Detect if mood is declining: if latest 2-reflection average is ≥2 points lower than earliest 2-reflection average."""
     if len(reflections) < 3:
       return None
     
@@ -60,10 +61,7 @@ class InsightEngine:
     return None
 
   def _detect_engagement(self, reflections: list, days_back: int = 7) -> str | None:
-    """
-    Check if patient has submitted reflections regularly.
-    If last reflection is >3 days old, flag low engagement.
-    """
+    """Flag low engagement if the patient's most recent reflection is more than 3 days old."""
     from datetime import datetime, timezone
 
     if not reflections:
@@ -80,10 +78,7 @@ class InsightEngine:
     return None
 
   def _detect_keywords(self, reflections: list) -> list[str]:
-    """
-    Scan reflection count for keywords: sleep, stress, work, anxiety, etc.
-    Return list of findings like "Sleep mentioned 3x"
-    """
+    """Scan reflection content for stress-related keywords (sleep, stress, work, anxiety) and return frequency counts for themes mentioned 2+ times."""
     keywords = {
       "sleep": ["sleep", "insomnia", "tired", "exhausted"],
       "stress": ["stress", "stressed", "overwhelmed"],
