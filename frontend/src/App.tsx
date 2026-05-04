@@ -1,6 +1,6 @@
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import "./App.css";
-import PatientForm from "./components/reflection-form";
+import ReflectionForm from "./components/reflection-form";
 import TherapistDashboard from "./pages/TherapistDashboard";
 
 function App() {
@@ -12,8 +12,8 @@ function App() {
       </nav>
 
       <Routes>
-        <Route path="/" element={<PatientForm />} />
-        <Route path="/patient" element={<PatientForm />} />
+        <Route path="/" element={<ReflectionForm />} />
+        <Route path="/patient" element={<ReflectionForm />} />
         <Route path="/therapist" element={<TherapistDashboard />} />
       </Routes>
     </BrowserRouter>
