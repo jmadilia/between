@@ -1,6 +1,6 @@
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import "./App.css";
-import PatientForm from "./pages/PatientForm";
+import PatientForm from "./components/reflection-form";
 import TherapistDashboard from "./pages/TherapistDashboard";
 
 function App() {
