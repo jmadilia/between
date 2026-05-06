@@ -1,6 +1,11 @@
-from sqlalchemy import Integer, String
+from enum import Enum as PyEnum
+from sqlalchemy import Integer, String, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.core_models import Base
+
+class UserRole(PyEnum):
+    patient = "patient"
+    therapist = "therapist"
 
 class User(Base):
   __tablename__ = "users"
@@ -10,10 +15,20 @@ class User(Base):
     primary_key=True,
     index=True
   )
+  
+  name: Mapped[str] = mapped_column(
+    String,
+    nullable=False
+  )
 
   email: Mapped[str] = mapped_column(
     String,
     unique=True,
     nullable=False,
     index=True  
+  )
+
+  role: Mapped[UserRole] = mapped_column(
+    Enum(UserRole),
+    nullable=False
   )
