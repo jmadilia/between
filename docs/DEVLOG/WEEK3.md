@@ -97,9 +97,51 @@
 
 ---
 
+### Therapist Dashboard — Backend & API Layer (Day 8)
+
+#### User Model Extension
+
+- Added `name: Mapped[str]` and `role: Mapped[UserRole]` fields to `User`
+  - `UserRole` is a Python `Enum` mapped to a SQLAlchemy `Enum` column — enforced at the DB level
+  - Chose enum over plain string to prevent invalid role values at the schema layer
+
+#### Patients Endpoint
+
+- Created `GET /patients/` in `routers/patients.py`
+  - Filters by `UserRole.patient` and returns `id`, `name`, `role` for each user
+  - Registered in `main.py` under `/patients` prefix
+- Returns explicit dicts rather than ORM objects — avoids serialization issues with `response_model=list[dict]`
+
+#### Seed Data
+
+- Rewrote `init_db.py` to insert test data after `create_all`
+  - 1 therapist, 3 patients (Alice, Bob, Carol)
+  - 9 reflections distributed across patients with deliberate variation:
+    - Alice: declining mood (4 → 2) and stress/sleep/work keywords to trigger insight flags
+    - Bob: stable mood with anxiety keywords
+    - Carol: low engagement (last check-in 15 days ago) and sleep keywords
+  - `db.flush()` used after adding users so their IDs are available before inserting reflections
+
+#### Frontend API Client
+
+- Added `Patient`, `Reflection`, and `Insights` TypeScript types matching backend response shapes
+- Added `getPatients()`, `getReflections(patientId)`, `getInsights(patientId)` with typed `Promise<T>` return signatures
+  - `getReflections` uses query param: `/reflections/?patient_id={id}`
+  - `getInsights` uses path param: `/insights/{id}`
+
+#### Learnings
+
+- `db.flush()` writes to the DB transaction buffer without committing — necessary when you need generated IDs before the session is committed
+- SQLAlchemy enum columns compare against enum members (`UserRole.patient`), not plain strings — using a string silently returns no results
+- Template literals require `${}` not `{}` for interpolation — static strings with curly braces are silently passed as-is
+
+---
+
 ### Current Status
 
 - ✅ Backend: Reflection API, migrations, CORS, Insight Engine all working
 - ✅ Frontend: Form scaffold complete, API client wired, data flow end-to-end
-- ⏳ Next: Day 7 — cleanup, polish, dead code removal
+- ✅ Backend: Patients endpoint, User model with roles, seed data all working
+- ✅ Frontend: Typed API client extended with patients, reflections, and insights functions
+- ⏳ Next: Day 8 continued — PatientList, ReflectionCard, PatientTimeline components + TherapistDashboard layout
 
