@@ -137,11 +137,51 @@
 
 ---
 
+### Therapist Dashboard — Frontend UI (Day 8 continued)
+
+#### Component Architecture
+
+- Built three new components to compose the dashboard:
+  - `PatientList` — fetches and renders all patients, accepts `selectedPatientId` and `onSelectPatient` as props, highlights the active patient with `bg-blue-100`
+  - `ReflectionCard` — displays a single reflection with formatted date, mood color dot, symptom severity, and content
+  - `PatientTimeline` — orchestrates data fetching for reflections and insights when a patient is selected, renders the insights box and reflection list
+- `TherapistDashboard` owns `selectedPatientId` state and passes it down — keeps data fetching logic out of the page component
+
+#### Split-View Layout
+
+- Used Tailwind `grid grid-cols-1 lg:grid-cols-4` for responsive layout
+  - Patient list takes `lg:col-span-1` with a right border
+  - Timeline takes `lg:col-span-3`
+  - Both panels scroll independently with `overflow-y-auto`
+- Stacks vertically on mobile, splits horizontally on large screens
+
+#### Mood Color System
+
+- Helper function `moodColor(mood)` maps 1–5 to Tailwind bg classes
+  - 1 = `bg-red-500`, 2 = `bg-orange-400`, 3 = `bg-yellow-400`, 4 = `bg-lime-400`, 5 = `bg-green-500`
+- Rendered as a small dot (`w-3 h-3 rounded-full`) next to the reflection date
+
+#### Data Fetching Pattern
+
+- `PatientTimeline` fetches reflections and insights in parallel using `Promise.all`
+- Reflections are sorted newest-first before setting state — sort happens client-side, no backend change needed
+- `useEffect` depends on `[patientId]` so the fetch re-runs whenever the selected patient changes
+- Loading and empty states handled explicitly
+
+#### Learnings
+
+- `getPatients().then(setPatients)` works without a wrapper because `setPatients` already accepts `Patient[]` — passing a state setter directly into `.then()` is clean when the types align
+- Independent scroll panels require `overflow-y-auto` on each column div, not on the outer grid container
+- `Promise.all` for parallel fetches is cleaner than sequential `await` calls when the results are independent
+
+---
+
 ### Current Status
 
 - ✅ Backend: Reflection API, migrations, CORS, Insight Engine all working
 - ✅ Frontend: Form scaffold complete, API client wired, data flow end-to-end
 - ✅ Backend: Patients endpoint, User model with roles, seed data all working
 - ✅ Frontend: Typed API client extended with patients, reflections, and insights functions
-- ⏳ Next: Day 8 continued — PatientList, ReflectionCard, PatientTimeline components + TherapistDashboard layout
+- ✅ Frontend: Split-view therapist dashboard complete — patient list, timeline, insights, mood colors all working
+- ⏳ Next: Day 9 — Mood/severity chart (Recharts), recent reflection excerpt in insights panel
 
