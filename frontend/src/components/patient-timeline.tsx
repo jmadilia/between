@@ -6,6 +6,7 @@ import {
   getInsights,
 } from "../api";
 import ReflectionCard from "./reflection-card";
+import MoodChart from "./mood-chart";
 
 type Props = {
   patientId: number | null;
@@ -46,8 +47,9 @@ function PatientTimeline({ patientId }: Props) {
   }
 
   return (
-    <div>
-      {/* Display insights */}
+    <div className="flex flex-col gap-4 p-4">
+      {reflections.length > 0 && <MoodChart reflections={reflections} />}
+
       {insights && (
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex flex-col gap-2">
           <p className="text-sm text-gray-700">{insights.summary}</p>
@@ -64,6 +66,20 @@ function PatientTimeline({ patientId }: Props) {
                 <li key={i}>{f}</li>
               ))}
             </ul>
+          )}
+          {reflections.length > 0 && (
+            <div className="mt-2 border-t border-blue-100 pt-2">
+              <p className="text-xs text-gray-400 mb-1">
+                Last reflection —{" "}
+                {new Date(reflections[0].created_at).toLocaleDateString(
+                  "en-US",
+                  { month: "long", day: "numeric", year: "numeric" },
+                )}
+              </p>
+              <p className="text-sm italic text-gray-600 border-l-2 border-gray-300 pl-3">
+                {reflections[0].content}
+              </p>
+            </div>
           )}
         </div>
       )}
