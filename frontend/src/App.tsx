@@ -6,7 +6,7 @@ import TherapistDashboard from "./pages/TherapistDashboard";
 function App() {
   return (
     <BrowserRouter>
-      <nav>
+      <nav className="flex justify-center gap-2">
         <Link to="/patient">Patient</Link>
         <Link to="/therapist">Therapist</Link>
       </nav>
