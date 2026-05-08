@@ -183,5 +183,49 @@
 - ✅ Backend: Patients endpoint, User model with roles, seed data all working
 - ✅ Frontend: Typed API client extended with patients, reflections, and insights functions
 - ✅ Frontend: Split-view therapist dashboard complete — patient list, timeline, insights, mood colors all working
-- ⏳ Next: Day 9 — Mood/severity chart (Recharts), recent reflection excerpt in insights panel
+- ✅ Frontend: Mood/severity chart and recent reflection excerpt complete
+
+---
+
+### Trends & Summaries (Day 9)
+
+#### MoodChart Component
+
+- Built `MoodChart` using Recharts `LineChart` with two lines
+  - Mood in blue (`#3b82f6`), symptom severity in orange (`#f97316`)
+  - Both on the same Y-axis bounded to 1–5 — same scale makes the relationship between metrics immediately readable
+  - X-axis shows formatted dates (`"May 3"` style), sorted oldest → newest (chronological, opposite of the reflection list sort)
+  - `ResponsiveContainer` with `width="100%"` so the chart fills its parent naturally
+  - `Tooltip` and `Legend` included for readability
+- Data is transformed from `Reflection[]` inside the component — no new API calls or state needed
+
+#### Recent Reflection Excerpt
+
+- Added to the bottom of the existing insights box in `PatientTimeline`
+- Pulls `reflections[0]` which is already sorted newest-first from the `useEffect`
+- Displays date and full content in an italic, left-bordered style (`border-l-2 border-gray-300 pl-3`) to visually distinguish it from computed insights
+- Guarded by `reflections.length > 0` — doesn't render for patients with no data
+
+#### Layout Order
+
+- Final panel order in `PatientTimeline`: chart → insights box (with excerpt) → individual reflection cards
+- Chart and excerpt are both gated on `reflections.length > 0` so empty states stay clean
+
+#### Learnings
+
+- Recharts `ResponsiveContainer` requires a parent with a defined width — placing it inside a flex column div works naturally
+- Chart data needs its own sort (ascending) independent of the reflection list sort (descending) — reusing the already-sorted array would render the chart right-to-left
+- Pulling `reflections[0]` for the excerpt is safe when the sort is guaranteed in `useEffect` before `setReflections` is called
+
+---
+
+### Current Status
+
+- ✅ Backend: Reflection API, migrations, CORS, Insight Engine all working
+- ✅ Frontend: Form scaffold complete, API client wired, data flow end-to-end
+- ✅ Backend: Patients endpoint, User model with roles, seed data all working
+- ✅ Frontend: Typed API client extended with patients, reflections, and insights functions
+- ✅ Frontend: Split-view therapist dashboard complete — patient list, timeline, insights, mood colors all working
+- ✅ Frontend: Mood/severity chart and recent reflection excerpt complete
+- ⏳ Next: Day 10 — Shared types, clear DTOs, no `any` types
 
