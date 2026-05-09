@@ -275,5 +275,63 @@
 - ✅ Frontend: Mood/severity chart and recent reflection excerpt complete
 - ✅ Backend: Pydantic response schemas and `response_model` wired to all endpoints
 - ✅ Frontend: Type mismatches corrected, all API functions fully typed
-- ⏳ Next: Day 11 — Role-based access, data isolation, audit-friendly structure
+- ✅ Backend: Auth dependency stubs, role guards, and data isolation complete
+- ✅ Docs: SECURITY.md documenting auth model and HIPAA gaps
+
+---
+
+### Security & Healthcare Awareness (Day 11)
+
+#### Auth Dependency Stubs
+
+- Created `backend/app/auth/deps.py` with three FastAPI dependency functions:
+  - `get_current_user()` — currently returns a hardcoded user from the DB; structured to be swapped for JWT decoding without changing any downstream code
+  - `require_therapist()` — raises HTTP 403 if current user is not a therapist
+  - `require_patient()` — raises HTTP 403 if current user is not a patient
+- The stub pattern means real auth is a single-function replacement — all role guards and isolation logic stay unchanged
+
+#### Role-Based Access Control
+
+- Every endpoint now has an explicit role guard:
+  - `GET /patients/` — therapist only
+  - `GET /insights/{patient_id}` — therapist only
+  - `POST /reflections/` — patient only
+  - `GET /reflections/` — identity-scoped (see below)
+- Guards use `_: User = Depends(require_X)` when the user object isn't needed in the function body — signals the dependency is enforced for its side effect only
+
+#### Data Isolation
+
+- `GET /reflections/` performs an identity check beyond role: if the requester is a patient, `current_user.id` must match the requested `patient_id`
+- Patients requesting another patient's reflections receive HTTP 403
+- Therapists bypass the identity check — cross-patient access is required by design
+- This is the HIPAA-critical distinction: role alone isn't sufficient, access must be scoped to identity
+
+#### SECURITY.md
+
+- Added `docs/SECURITY.md` documenting three tiers:
+  - What's real now (role guards, data isolation, audit-friendly timestamps)
+  - What's stubbed (authentication)
+  - What full HIPAA compliance would require (AuditLog table, token expiry, encrypted PHI fields, rate limiting, consent tracking)
+
+#### Learnings
+
+- FastAPI dependencies compose cleanly — `require_therapist` wraps `get_current_user`, so upgrading auth only requires changing the innermost function
+- `_` naming for unused dependency return values is a Python convention that signals intent — the dependency runs for its side effect, not its return value
+- Role-based access and identity-scoped access are separate concerns — a therapist role check prevents cross-role access, but only an identity check prevents same-role cross-patient access
+
+---
+
+### Current Status
+
+- ✅ Backend: Reflection API, migrations, CORS, Insight Engine all working
+- ✅ Frontend: Form scaffold complete, API client wired, data flow end-to-end
+- ✅ Backend: Patients endpoint, User model with roles, seed data all working
+- ✅ Frontend: Typed API client extended with patients, reflections, and insights functions
+- ✅ Frontend: Split-view therapist dashboard complete — patient list, timeline, insights, mood colors all working
+- ✅ Frontend: Mood/severity chart and recent reflection excerpt complete
+- ✅ Backend: Pydantic response schemas and `response_model` wired to all endpoints
+- ✅ Frontend: Type mismatches corrected, all API functions fully typed
+- ✅ Backend: Auth dependency stubs, role guards, and data isolation complete
+- ✅ Docs: SECURITY.md documenting auth model and HIPAA gaps
+- ⏳ Next: Day 12 — Demo polish, patient form styling, loading/success states
 
