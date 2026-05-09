@@ -31,13 +31,22 @@ class ReflectionCreate(ReflectionBase):
   )
 
 class ReflectionRead(ReflectionBase):
-    id: int
-    patient_id: int
-    created_at: datetime
+  id: int
+  patient_id: int
+  created_at: datetime
 
-    class Config:
-        from_attributes = True
+  class Config:
+      from_attributes = True
 
+class PatientRead(BaseModel):
+  id: int
+  name: str
+  role: str
 
-class ReflectionList(BaseModel):
-    items: List[ReflectionRead]
+  class Config:
+      from_attributes = True
+  
+class InsightsRead(BaseModel):
+  trends: list[str]
+  flags: list[str]
+  summary: str
