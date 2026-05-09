@@ -227,5 +227,53 @@
 - ✅ Frontend: Typed API client extended with patients, reflections, and insights functions
 - ✅ Frontend: Split-view therapist dashboard complete — patient list, timeline, insights, mood colors all working
 - ✅ Frontend: Mood/severity chart and recent reflection excerpt complete
-- ⏳ Next: Day 10 — Shared types, clear DTOs, no `any` types
+- ✅ Backend: Pydantic response schemas and `response_model` wired to all endpoints
+- ✅ Frontend: Type mismatches corrected, all API functions fully typed
+
+---
+
+### Shared Types & Contracts (Day 10)
+
+#### New Pydantic Schemas
+
+- Added `PatientRead` to `core_schemas.py`
+  - `id`, `name`, `role` fields
+  - `from_attributes = True` — built from SQLAlchemy ORM objects, so Pydantic needs attribute access rather than dict access
+- Added `InsightsRead` to `core_schemas.py`
+  - `trends: list[str]`, `flags: list[str]`, `summary: str`
+  - No `from_attributes` needed — insight engine returns a plain dict, not an ORM object
+- Removed unused `ReflectionList` schema — was defined but never imported or used anywhere
+
+#### Response Models Wired
+
+- `GET /patients/` now has `response_model=list[PatientRead]`
+  - Can now return ORM objects directly instead of manually building dicts — Pydantic handles serialization
+- `GET /insights/{patient_id}` now has `response_model=InsightsRead`
+  - FastAPI validates the engine's output shape before sending — malformed responses now surface as a 500 instead of silently reaching the frontend
+- All endpoints now appear with accurate response schemas in FastAPI's auto-generated docs at `/docs`
+
+#### Frontend Type Fixes
+
+- `Insights.summary` corrected from `string[]` to `string` — was a live type mismatch with the backend
+- `submitReflection` now returns `Promise<Reflection>` instead of `Promise<any>`
+
+#### Learnings
+
+- `from_attributes = True` is required on any Pydantic schema that wraps a SQLAlchemy model — without it, Pydantic tries dict-style access and the serialization fails
+- `response_model` on an endpoint does two things: validates outgoing data at runtime, and documents the response shape in `/docs` — both matter
+- A type mismatch between backend and frontend (`string` vs `string[]`) won't cause an immediate error if the value is only rendered as text — it silently becomes a bug the moment you try to iterate or call array methods on it
+
+---
+
+### Current Status
+
+- ✅ Backend: Reflection API, migrations, CORS, Insight Engine all working
+- ✅ Frontend: Form scaffold complete, API client wired, data flow end-to-end
+- ✅ Backend: Patients endpoint, User model with roles, seed data all working
+- ✅ Frontend: Typed API client extended with patients, reflections, and insights functions
+- ✅ Frontend: Split-view therapist dashboard complete — patient list, timeline, insights, mood colors all working
+- ✅ Frontend: Mood/severity chart and recent reflection excerpt complete
+- ✅ Backend: Pydantic response schemas and `response_model` wired to all endpoints
+- ✅ Frontend: Type mismatches corrected, all API functions fully typed
+- ⏳ Next: Day 11 — Role-based access, data isolation, audit-friendly structure
 
