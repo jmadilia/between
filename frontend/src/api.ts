@@ -22,7 +22,7 @@ export type Reflection = {
 export type Insights = {
   trends: string[];
   flags: string[];
-  summary: string[];
+  summary: string;
 };
 
 export type ReflectionPayload = {
@@ -32,7 +32,9 @@ export type ReflectionPayload = {
   symptom_severity: number;
 };
 
-export async function submitReflection(data: ReflectionPayload) {
+export async function submitReflection(
+  data: ReflectionPayload,
+): Promise<Reflection> {
   const response = await api.post("/reflections/", data);
   return response.data;
 }
