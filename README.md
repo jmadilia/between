@@ -71,7 +71,8 @@ between/
 │   ├── src/
 │   │   ├── components/    # Reusable React components
 │   │   ├── pages/         # Page-level components (patient form, therapist dashboard)
-│   │   └── App.tsx        # Routing and layout
+│   │   │   ├── api.ts         # Typed API client
+   └── App.tsx        # Routing, layout, and theme
 │   └── package.json
 └── docs/                  # Dev logs and planning
 ```
@@ -99,10 +100,11 @@ between/
    # DATABASE_URL=postgresql://user:password@localhost/between
    ```
 
-3. **Initialize database:**
+3. **Initialize database and seed data:**
 
    ```bash
    python -m alembic upgrade head
+   python app/db/init_db.py
    ```
 
 4. **Run the server:**
@@ -136,16 +138,21 @@ between/
 ### Reflections
 
 - `POST /reflections` — Submit a new reflection
-  - Body: `{ patient_id, mood, symptom_severity, text }`
+  - Body: `{ patient_id, mood, symptom_severity, content }`
   - Returns: Created reflection object
 
 - `GET /reflections?patient_id=<id>` — Retrieve patient's reflection history
   - Returns: Array of reflection objects
 
+### Patients
+
+- `GET /patients` — List all patients (therapist only)
+  - Returns: Array of patient objects
+
 ### Insights
 
-- `GET /insights/{patient_id}` — Get AI-generated insights for a patient
-  - Returns: Insight summary with mood trends, flags, keywords
+- `GET /insights/{patient_id}` — Get rule-based insights for a patient
+  - Returns: `{ trends, flags, summary }` — deterministic, explainable output
 
 ### Health
 
@@ -157,10 +164,11 @@ between/
 
 ### Frontend
 
-- React 18+ with TypeScript
+- React 19 with TypeScript
 - Vite (build tool)
-- Accessible form controls
-- Minimal styling
+- Tailwind CSS v4 (Peachy Fog design system, light/dark mode)
+- Recharts (mood/severity trend chart)
+- React Router v6
 
 ### Backend
 
