@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import date, datetime
 from typing import List
 
 class ReflectionBase(BaseModel):
@@ -50,3 +50,21 @@ class InsightsRead(BaseModel):
   trends: list[str]
   flags: list[str]
   summary: str
+
+
+class NoteCreate(BaseModel):
+  patient_id: int = Field(..., gt=0)
+  content: str = Field(..., min_length=1, max_length=10000)
+  session_date: date
+
+
+class NoteRead(BaseModel):
+  id: int
+  patient_id: int
+  therapist_id: int
+  content: str
+  session_date: date
+  created_at: datetime
+
+  class Config:
+    from_attributes = True

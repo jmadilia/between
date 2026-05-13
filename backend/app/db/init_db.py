@@ -4,6 +4,7 @@ from app.db.session import SessionLocal, engine
 from app.models.core_models import Base
 from app.models.reflection import Reflection
 from app.models.session_summary import SessionSummary
+from app.models.therapist_note import TherapistNote
 from app.models.user import User, UserRole
 
 
