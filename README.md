@@ -1,6 +1,6 @@
 # Between
 
-Between is a between-session reflection platform that helps patients track mood, symptoms, and goals, while providing therapists with concise, explainable summaries to guide care.
+Between is a between-session reflection platform that helps patients track mood, symptoms, and goals, while providing therapists with AI-generated summaries and session notes to guide care.
 
 ## Problem & Solution
 
@@ -24,10 +24,12 @@ Between bridges that gap. Patients submit quick reflections (mood, symptoms, fre
 
 ### For Therapists
 
-- **Pre-session summaries** provide quick understanding of patient status
-- **Mood trends** highlight patterns and changes
+- **AI-generated pre-session summaries** synthesize patient reflections and session notes into a clinical narrative
+- **Session notes** let therapists log observations after each visit, creating a two-sided record
+- **Time-windowed insights** — pull a weekly check-in, monthly progress snapshot, or full-history summary on demand
+- **Mood trends** highlight patterns and changes over time
 - **Engagement tracking** flags missed reflections
-- **Keyword detection** surfaces stress factors (sleep, work, anxiety)
+- **Keyword detection** surfaces recurring stress factors (sleep, work, anxiety)
 
 ---
 
@@ -45,10 +47,13 @@ Between bridges that gap. Patients submit quick reflections (mood, symptoms, fre
 
 - Patient timeline (list of reflections)
 - Mood trend visualization
-- Auto-generated pre-session summary with:
+- Session notes — log observations after each visit
+- AI-generated pre-session summary (Claude `opus-4-7`) with:
+  - Clinical narrative synthesized from patient reflections and therapist notes
   - Key mood/symptom trends
   - Engagement status
   - Notable keywords and themes
+- Time-windowed insights: Week / Month / Year / All time
 
 ---
 
@@ -60,9 +65,11 @@ between/
 │   ├── app/
 │   │   ├── core/          # Configuration, auth stubs
 │   │   ├── db/            # Database session, initialization
-│   │   ├── models/        # SQLAlchemy ORM models (User, Reflection, etc.)
+│   │   ├── models/        # SQLAlchemy ORM models (User, Reflection, TherapistNote)
 │   │   ├── schemas/       # Pydantic request/response schemas
-│   │   ├── engine/        # Insight generation (rule-based logic)
+│   │   ├── engine/        # Insight generation (rule-based + AI summary)
+│   │   │   ├── insight_engine.py  # Deterministic mood/engagement/keyword analysis
+│   │   │   └── ai_summary.py      # Claude API integration for clinical narratives
 │   │   └── main.py        # FastAPI app setup and routing
 │   ├── routers/           # API endpoint handlers
 │   ├── alembic/           # Database migrations
@@ -71,8 +78,8 @@ between/
 │   ├── src/
 │   │   ├── components/    # Reusable React components
 │   │   ├── pages/         # Page-level components (patient form, therapist dashboard)
-│   │   │   ├── api.ts         # Typed API client
-   └── App.tsx        # Routing, layout, and theme
+│   │   ├── api.ts         # Typed API client
+│   │   └── App.tsx        # Routing, layout, and theme
 │   └── package.json
 └── docs/                  # Dev logs and planning
 ```
@@ -96,8 +103,9 @@ between/
 
    ```bash
    cp .env.example .env
-   # Edit .env with your PostgreSQL connection string
+   # Edit .env with your credentials:
    # DATABASE_URL=postgresql://user:password@localhost/between
+   # ANTHROPIC_API_KEY=sk-ant-...   (required for AI-generated summaries)
    ```
 
 3. **Initialize database and seed data:**
@@ -137,7 +145,7 @@ between/
 
 ### Reflections
 
-- `POST /reflections` — Submit a new reflection
+- `POST /reflections` — Submit a new reflection (patient only)
   - Body: `{ patient_id, mood, symptom_severity, content }`
   - Returns: Created reflection object
 
@@ -149,10 +157,20 @@ between/
 - `GET /patients` — List all patients (therapist only)
   - Returns: Array of patient objects
 
+### Notes
+
+- `POST /notes` — Create a therapist session note (therapist only)
+  - Body: `{ patient_id, content, session_date }`
+  - Returns: Created note object
+
+- `GET /notes?patient_id=<id>` — Retrieve session notes for a patient (therapist only)
+  - Returns: Array of note objects
+
 ### Insights
 
-- `GET /insights/{patient_id}` — Get rule-based insights for a patient
-  - Returns: `{ trends, flags, summary }` — deterministic, explainable output
+- `GET /insights/{patient_id}?window=week|month|year|all` — Get AI-generated insights for a patient (therapist only)
+  - Filters reflections and therapist notes by the selected time window
+  - Returns: `{ trends, flags, summary }` — rule-based signals + AI clinical narrative
 
 ### Health
 
@@ -177,15 +195,17 @@ between/
 - SQLAlchemy (ORM)
 - Pydantic (validation)
 - Alembic (migrations)
+- Anthropic Python SDK (Claude `opus-4-7` for AI summaries)
 
 ---
 
 ## Design Principles
 
-- **Rule-based intelligence:** Insights are deterministic and explainable, never AI-generated therapy advice
-- **Healthcare-aware:** Data isolation, role-based access, audit-friendly structure
-- **Simple & focused:** No scheduling, messaging, or notifications in MVP
-- **Patient-first:** Empathetic UX, clear language, minimal friction
+- **Hybrid intelligence:** Rule-based signals (mood trends, engagement, keyword flags) are deterministic and auditable. Claude synthesizes them into a clinical narrative — it explains patterns, it doesn't diagnose.
+- **Two-sided context:** Therapist notes and patient reflections are kept separate and combined only at insight-generation time, so each record is clean and role-appropriate.
+- **Healthcare-aware:** Data isolation, role-based access, audit-friendly structure throughout.
+- **Simple & focused:** No scheduling, messaging, or notifications in MVP.
+- **Patient-first:** Empathetic UX, clear language, minimal friction.
 
 ---
 
@@ -198,7 +218,7 @@ between/
 - Notifications
 - HIPAA certification claims
 - Diagnosis or treatment recommendations
-- AI-generated therapy advice
+- AI acting as a therapist or giving clinical advice
 
 ---
 
