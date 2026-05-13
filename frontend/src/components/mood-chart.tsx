@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { type Reflection } from "../api";
 import {
   LineChart,
@@ -15,6 +16,17 @@ type Props = {
 };
 
 function MoodChart({ reflections }: Props) {
+  const [isDark, setIsDark] = useState(
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
+  );
+
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
   const data = [...reflections]
     .sort(
       (a, b) =>
@@ -29,17 +41,20 @@ function MoodChart({ reflections }: Props) {
       severity: r.symptom_severity,
     }));
 
+  const gridColor = isDark ? "#4e4c4f" : "#d9ae8e";
+  const tickColor = isDark ? "#9f8d8d" : "#4e4c4f";
+
   return (
     <ResponsiveContainer width="100%" height={250}>
       <LineChart
         data={data}
         margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+        <XAxis dataKey="date" tick={{ fontSize: 12, fill: tickColor }} />
         <YAxis
           domain={[1, 5]}
           ticks={[1, 2, 3, 4, 5]}
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: 12, fill: tickColor }}
         />
         <Tooltip />
         <Legend />

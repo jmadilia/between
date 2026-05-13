@@ -8,14 +8,14 @@ function TherapistDashboard() {
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 h-screen">
-      <div className="lg:col-span-1 border-r overflow-y-auto">
+    <div className="grid grid-cols-1 lg:grid-cols-4 flex-1 min-h-0 overflow-hidden bg-fog-50 dark:bg-fog-900">
+      <div className="lg:col-span-1 bg-white dark:bg-fog-900 border-r border-fog-200 dark:border-fog-700 overflow-y-auto">
         <PatientList
           selectedPatientId={selectedPatientId}
           onSelectPatient={setSelectedPatientId}
         />
       </div>
-      <div className="lg:col-span-3 overflow-y-auto">
+      <div className="lg:col-span-3 bg-fog-50 dark:bg-fog-900 overflow-y-auto">
         <PatientTimeline patientId={selectedPatientId} />
       </div>
     </div>

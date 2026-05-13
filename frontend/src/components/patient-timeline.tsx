@@ -36,14 +36,14 @@ function PatientTimeline({ patientId }: Props) {
 
   if (patientId === null) {
     return (
-      <p className="text-gray-400 p-4">
+      <p className="text-fog-400 p-4">
         Select a patient to view their timeline.
       </p>
     );
   }
 
   if (loading) {
-    return <p className="text-gray-400 p-4">Loading...</p>;
+    return <p className="text-fog-400 p-4">Loading...</p>;
   }
 
   return (
@@ -51,32 +51,32 @@ function PatientTimeline({ patientId }: Props) {
       {reflections.length > 0 && <MoodChart reflections={reflections} />}
 
       {insights && (
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex flex-col gap-2">
-          <p className="text-sm text-gray-700">{insights.summary}</p>
+        <div className="bg-white dark:bg-fog-700 border border-fog-200 dark:border-fog-700 rounded-lg p-4 flex flex-col gap-2">
+          <p className="text-sm text-fog-900 dark:text-fog-50">{insights.summary}</p>
           {insights.trends.length > 0 && (
-            <ul className="text-xs text-blue-700 list-disc list-inside">
+            <ul className="text-xs text-fog-700 dark:text-fog-200 list-disc list-inside">
               {insights.trends.map((t, i) => (
                 <li key={i}>{t}</li>
               ))}
             </ul>
           )}
           {insights.flags.length > 0 && (
-            <ul className="text-xs text-orange-600 list-disc list-inside">
+            <ul className="text-xs text-fog-900 dark:text-fog-200 list-disc list-inside">
               {insights.flags.map((f, i) => (
                 <li key={i}>{f}</li>
               ))}
             </ul>
           )}
           {reflections.length > 0 && (
-            <div className="mt-2 border-t border-blue-100 pt-2">
-              <p className="text-xs text-gray-400 mb-1">
+            <div className="mt-2 border-t border-fog-200 dark:border-fog-700 pt-2">
+              <p className="text-xs text-fog-400 mb-1">
                 Last reflection —{" "}
                 {new Date(reflections[0].created_at).toLocaleDateString(
                   "en-US",
                   { month: "long", day: "numeric", year: "numeric" },
                 )}
               </p>
-              <p className="text-sm italic text-gray-600 border-l-2 border-gray-300 pl-3">
+              <p className="text-sm italic text-fog-700 dark:text-fog-400 border-l-2 border-fog-400 pl-3">
                 {reflections[0].content}
               </p>
             </div>
@@ -85,7 +85,7 @@ function PatientTimeline({ patientId }: Props) {
       )}
 
       {reflections.length === 0 ? (
-        <p className="text-gray-400">No reflections yet.</p>
+        <p className="text-fog-400">No reflections yet.</p>
       ) : (
         reflections.map((r) => <ReflectionCard key={r.id} reflection={r} />)
       )}

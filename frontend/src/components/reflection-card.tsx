@@ -22,19 +22,18 @@ function ReflectionCard({ reflection }: Props) {
   );
 
   return (
-    <div className="border rounded-lg p-4 flex flex-col gap-2">
-      {/* Display reflection information */}
+    <div className="bg-white dark:bg-fog-700 border border-fog-200 dark:border-fog-700 rounded-lg p-4 flex flex-col gap-2">
       <div>
         <div className="flex items-center gap-2">
           <span
             className={`w-3 h-3 rounded-full ${moodColor(reflection.mood)}`}
           />
-          <span className="text-sm text-gray-500">{reflectionDate}</span>
+          <span className="text-sm text-fog-400">{reflectionDate}</span>
         </div>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-fog-400">
           Severity: {reflection.symptom_severity}/5
         </p>
-        <p className="text-gray-700">{reflection.content}</p>
+        <p className="text-fog-900 dark:text-fog-50">{reflection.content}</p>
       </div>
     </div>
   );

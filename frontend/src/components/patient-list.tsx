@@ -15,18 +15,17 @@ function PatientList({ selectedPatientId, onSelectPatient }: Props) {
 
   return (
     <div>
-      {/* Convert patients into a list of buttons*/}
+      <p className="px-4 pt-4 pb-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-fog-400">Patients</p>
       {patients.map((patient) => (
         <button
           key={patient.id}
           onClick={() => onSelectPatient(patient.id)}
-          className={`text-left px-4 py-3 rounded-lg cursor-pointer ${
+          className={`w-full text-left px-4 py-3 rounded-lg cursor-pointer ${
             selectedPatientId === patient.id
-              ? "bg-blue-100 text-blue-900"
-              : "hover:bg-gray-100 text-gray-700"
+              ? "bg-fog-200 dark:bg-fog-700 text-fog-900 dark:text-fog-50"
+              : "hover:bg-fog-50 dark:hover:bg-fog-700 text-fog-700 dark:text-fog-400"
           }`}>
           <div>{patient.name}</div>
-          <div>{patient.role}</div>
         </button>
       ))}
     </div>
