@@ -25,12 +25,29 @@ export type Insights = {
   summary: string;
 };
 
+export type Note = {
+  id: number;
+  patient_id: number;
+  therapist_id: number;
+  content: string;
+  session_date: string;
+  created_at: string;
+};
+
 export type ReflectionPayload = {
   patient_id: number;
   content: string;
   mood: number;
   symptom_severity: number;
 };
+
+export type NotePayload = {
+  patient_id: number;
+  content: string;
+  session_date: string;
+};
+
+export type InsightWindow = "week" | "month" | "year" | "all";
 
 export async function submitReflection(
   data: ReflectionPayload,
@@ -49,7 +66,20 @@ export async function getReflections(patientId: number): Promise<Reflection[]> {
   return response.data;
 }
 
-export async function getInsights(patientId: number): Promise<Insights> {
-  const response = await api.get(`/insights/${patientId}`);
+export async function getInsights(
+  patientId: number,
+  window: InsightWindow = "all",
+): Promise<Insights> {
+  const response = await api.get(`/insights/${patientId}?window=${window}`);
+  return response.data;
+}
+
+export async function getNotes(patientId: number): Promise<Note[]> {
+  const response = await api.get(`/notes/?patient_id=${patientId}`);
+  return response.data;
+}
+
+export async function createNote(data: NotePayload): Promise<Note> {
+  const response = await api.post("/notes/", data);
   return response.data;
 }
