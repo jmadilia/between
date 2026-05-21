@@ -65,3 +65,69 @@
 - ✅ Frontend: Insight window selector — Week/Month/Year/All
 - ✅ Seed data: Realistic therapist notes for all three patients, timed to complement reflection arcs
 - ✅ Frontend: On-demand AI insight generation — Generate button, empty state, Regenerate button
+- ✅ Backend: SOAPNote model, AI draft generation, save, and list endpoints
+- ✅ Frontend: SOAP note form with AI generation, manual entry, and review flow
+- ✅ Frontend: SOAP notes section with expandable note history in therapist dashboard
+
+---
+
+### Day 16 — SOAP Notes Model + API
+
+#### Why SOAP notes
+
+- SOAP (Subjective, Objective, Assessment, Plan) is the standard structured documentation format required by insurers and mandated by law in many states
+- Distinct from `TherapistNote` (informal, free-text session observations) — SOAP notes are formal legal records that must be retained and may be subpoenaed
+- The two-sided data model (patient reflections + therapist notes) already in place gives Claude everything it needs to generate a credible draft for each section
+
+#### SOAPNote model
+
+- New `SOAPNote` model in `app/models/soap_note.py`: `id`, `patient_id`, `therapist_id`, `session_date`, `subjective`, `objective`, `assessment`, `plan`, `created_at`
+- Four `Text` columns map directly to the SOAP format — no JSON blob, each field is independently queryable and exportable
+- Follows the same auth pattern as `TherapistNote`: `therapist_id` stamped from `current_user`, never trusted from the client
+
+#### AI generation
+
+- `app/engine/ai_soap.py` — `generate_soap_draft()` builds a structured prompt and instructs Claude to return raw JSON with exactly four keys
+- `_objective_data()` computes mood/severity averages and trend direction from the last four reflections — gives Claude quantitative grounding for the Objective section
+- Response parsed with `json.loads()` — raises HTTP 502 if Claude returns malformed output rather than silently swallowing the error
+- `POST /soap-notes/generate` returns a draft only and never writes to the database — the therapist must review, edit, and explicitly save
+
+#### API endpoints
+
+- `POST /soap-notes/generate` — AI draft, no DB write; raises 503 if API key not configured, 502 on generation failure
+- `POST /soap-notes/` — saves the therapist-reviewed note; validates patient exists and holds patient role
+- `GET /soap-notes/?patient_id=` — returns notes ordered newest session date first
+
+#### Learnings
+
+- Asking Claude to return raw JSON (no markdown, no code fences) and parsing with `json.loads()` is more reliable than trying to extract JSON from a markdown code block — the prompt must be explicit about format
+- Never auto-saving AI output as a medical record is a hard rule: the generate endpoint intentionally has no DB write path. The save endpoint is always a separate, explicit action by the clinician
+- Raising HTTP errors (502, 503) rather than falling back silently is the right call for SOAP generation — a therapist needs to know generation failed, not receive an empty note
+
+---
+
+### Day 17 — Frontend: SOAP Note UI
+
+#### SOAPNoteForm component
+
+- Four labeled textareas (Subjective, Objective, Assessment, Plan), each with a short description of what belongs in that section
+- Session date picker defaulting to today — therapist can backdate for notes entered after the session
+- **"Generate with AI"** button calls `POST /soap-notes/generate`; pre-fills all four fields with Claude's draft
+- Once AI-filled, a banner reads "AI-generated draft — review and edit each section before saving" — makes the review obligation explicit
+- Button label updates to "Regenerate with AI" after first generation
+- **"Save Note"** requires all four fields to be non-empty; calls `POST /soap-notes/` with the final content
+- Manual entry path: therapist fills fields directly without ever clicking Generate — same save flow
+
+#### SOAPNotesSection component
+
+- Header with section title, description ("Structured clinical documentation for insurance and legal records"), and a "New SOAP Note" button
+- "New SOAP Note" renders `SOAPNoteForm` inline; Cancel hides it without losing other page state
+- Past notes listed below, each showing session date and a truncated Subjective preview
+- Clicking "View" expands the full note with all four labeled sections; clicking "Collapse" hides it again
+- On successful save, refetches the notes list and closes the form
+
+#### Learnings
+
+- Composing `SOAPNotePayload` from `SOAPDraft & { patient_id, session_date }` using TypeScript intersection types keeps the type definitions DRY — the four SOAP fields are defined once in `SOAPDraft` and reused across draft, payload, and read types
+- Inline form toggle (show/hide without navigation) keeps the therapist in context while writing a note — avoids a page transition that would lose their place in the patient timeline
+- Expanding notes in place with a state toggle avoids a dedicated note detail page for MVP — keeps the component surface area small
