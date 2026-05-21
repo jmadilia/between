@@ -131,3 +131,32 @@
 - Composing `SOAPNotePayload` from `SOAPDraft & { patient_id, session_date }` using TypeScript intersection types keeps the type definitions DRY — the four SOAP fields are defined once in `SOAPDraft` and reused across draft, payload, and read types
 - Inline form toggle (show/hide without navigation) keeps the therapist in context while writing a note — avoids a page transition that would lose their place in the patient timeline
 - Expanding notes in place with a state toggle avoids a dedicated note detail page for MVP — keeps the component surface area small
+
+---
+
+### Tabbed Patient Navigation
+
+#### Problem
+
+The patient detail panel had become a single long scroll: mood chart, AI summary, session notes, SOAP notes, and reflection cards all stacked vertically. With real data this is cumbersome — a therapist scrolling past dozens of session notes to reach SOAP notes or past SOAP notes to reach reflections is a friction point that compounds as data grows.
+
+#### Solution
+
+Replaced the vertical scroll with four focused tabs at the top of the right panel:
+
+- **Overview** — Mood chart and AI pre-session summary. The at-a-glance view a therapist opens before walking into a session.
+- **Reflections** — Full patient reflection history. Historical self-reports without clinical documentation mixed in.
+- **Notes** — Session notes (informal, free-text observations).
+- **SOAP Notes** — Formal structured documentation.
+
+#### Implementation
+
+- Tab bar is `flex-none` and sits above the scrollable content area — it never scrolls out of view regardless of how far down the therapist is in the content
+- Content area is `flex-1 overflow-y-auto` — each tab's content scrolls independently
+- `TherapistDashboard` changed right panel from `overflow-y-auto` to `flex flex-col min-h-0` — scroll ownership moved from the parent container into `PatientTimeline` itself
+- Switching patients resets to the Overview tab — the therapist always lands on the at-a-glance view first for a new patient
+
+#### Learnings
+
+- Scroll ownership matters in nested flex layouts — when a child needs to scroll internally, the parent must give up `overflow-y-auto` and instead use `flex flex-col min-h-0` to allow the child to size correctly
+- Tab structure maps directly to clinical workflow: before a session (Overview), reviewing history (Reflections), writing informal notes (Notes), formal documentation (SOAP) — the UI organization should reflect how clinicians actually work, not just how data is modeled
