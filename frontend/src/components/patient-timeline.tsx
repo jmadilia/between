@@ -9,6 +9,7 @@ import {
 import ReflectionCard from "./reflection-card";
 import MoodChart from "./mood-chart";
 import SessionNotes from "./session-notes";
+import SOAPNotesSection from "./soap-notes-section";
 
 type Props = {
   patientId: number | null;
@@ -150,6 +151,7 @@ function PatientTimeline({ patientId }: Props) {
       </div>
 
       <SessionNotes patientId={patientId} />
+      <SOAPNotesSection patientId={patientId} />
 
       {reflections.length === 0 ? (
         <p className="text-fog-400">No reflections yet.</p>

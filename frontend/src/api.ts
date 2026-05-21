@@ -83,3 +83,44 @@ export async function createNote(data: NotePayload): Promise<Note> {
   const response = await api.post("/notes/", data);
   return response.data;
 }
+
+export type SOAPDraft = {
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+};
+
+export type SOAPNote = SOAPDraft & {
+  id: number;
+  patient_id: number;
+  therapist_id: number;
+  session_date: string;
+  created_at: string;
+};
+
+export type SOAPNotePayload = SOAPDraft & {
+  patient_id: number;
+  session_date: string;
+};
+
+export async function generateSOAPDraft(
+  patientId: number,
+  sessionDate: string,
+): Promise<SOAPDraft> {
+  const response = await api.post("/soap-notes/generate", {
+    patient_id: patientId,
+    session_date: sessionDate,
+  });
+  return response.data;
+}
+
+export async function createSOAPNote(data: SOAPNotePayload): Promise<SOAPNote> {
+  const response = await api.post("/soap-notes/", data);
+  return response.data;
+}
+
+export async function getSOAPNotes(patientId: number): Promise<SOAPNote[]> {
+  const response = await api.get(`/soap-notes/?patient_id=${patientId}`);
+  return response.data;
+}
