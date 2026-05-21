@@ -42,6 +42,105 @@ def init_db():
         ]
 
         db.add_all(reflections)
+
+        notes = [
+            # Alice — two notes bracketing her decline
+            # First session: early warning signs, therapist flags work pressure
+            TherapistNote(
+                patient_id=alice.id,
+                therapist_id=therapist.id,
+                session_date=(now - timedelta(days=13)).date(),
+                content=(
+                    "Alice presented as engaged and largely optimistic. She acknowledged increasing "
+                    "workload pressure over the past few weeks and an upcoming project deadline. Mood "
+                    "appeared euthymic and affect was appropriate. We explored her current coping "
+                    "strategies — she identified exercise and journaling as helpful anchors. Agreed to "
+                    "monitor stress levels between sessions. Will revisit sleep quality at next appointment "
+                    "as she noted occasional difficulty winding down at night."
+                ),
+            ),
+            # Second session: mood has declined, sleep disrupted, performance review imminent
+            TherapistNote(
+                patient_id=alice.id,
+                therapist_id=therapist.id,
+                session_date=(now - timedelta(days=6)).date(),
+                content=(
+                    "Alice presented visibly fatigued and more guarded than in previous sessions. Sleep "
+                    "has been significantly disrupted — difficulty falling asleep and early waking most "
+                    "nights. Work stress has escalated sharply around a performance review scheduled for "
+                    "next week. Explored the cognitive distortions driving her anticipatory anxiety and "
+                    "introduced a brief sleep hygiene protocol. Alice expressed concern that her performance "
+                    "is already declining, which appears to be reinforcing the anxiety loop. Plan: monitor "
+                    "mood and sleep closely over the next week; consider PCP referral if sleep disruption "
+                    "persists beyond the review period."
+                ),
+            ),
+
+            # Bob — two notes tracking his anxiety arc and recovery
+            # First session: avoidance patterns identified, behavioral activation introduced
+            TherapistNote(
+                patient_id=bob.id,
+                therapist_id=therapist.id,
+                session_date=(now - timedelta(days=11)).date(),
+                content=(
+                    "Bob discussed anticipatory anxiety around an upcoming family visit. He identified "
+                    "his mother's critical communication style as a primary trigger and acknowledged "
+                    "withdrawing socially in advance of the visit as a way to 'brace himself.' Explored "
+                    "the avoidance pattern and its short-term relief vs. long-term cost. Introduced "
+                    "behavioral activation as an alternative — set a concrete action item for the week: "
+                    "one brief outdoor walk before the family visit."
+                ),
+            ),
+            # Second session: behavioral activation worked, family visit navigated, momentum building
+            TherapistNote(
+                patient_id=bob.id,
+                therapist_id=therapist.id,
+                session_date=(now - timedelta(days=3)).date(),
+                content=(
+                    "Bob reported completing the behavioral activation task from last session — a "
+                    "30-minute walk, which he said genuinely helped regulate his mood. Affect was "
+                    "noticeably brighter. The family visit has passed; he described it as tense but "
+                    "manageable, and reflected on his ability to tolerate discomfort without fully "
+                    "withdrawing. Discussed maintaining this momentum: identifying other avoided social "
+                    "situations and approaching them gradually. Bob showed good insight into his anxiety "
+                    "patterns today — a meaningful shift from last session."
+                ),
+            ),
+
+            # Carol — two notes, then silence (reinforces the disengagement signal)
+            # First session: severe presentation, safety assessed, hopelessness present
+            TherapistNote(
+                patient_id=carol.id,
+                therapist_id=therapist.id,
+                session_date=(now - timedelta(days=19)).date(),
+                content=(
+                    "Carol presented with significant psychomotor slowing and tearfulness throughout "
+                    "the session. Sleep is severely disrupted — fewer than four hours per night for the "
+                    "past two weeks. She expressed feelings of hopelessness and low motivation. Conducted "
+                    "safety assessment: no active plan or intent; protective factors include her daughter "
+                    "and work obligations. Discussed the bidirectional relationship between sleep "
+                    "deprivation and mood. Plan: refer to PCP for sleep evaluation; provide sleep hygiene "
+                    "psychoeducation; consider increasing session frequency if symptoms worsen."
+                ),
+            ),
+            # Second session: slight improvement, PCP referral in motion, re-engagement encouraged
+            TherapistNote(
+                patient_id=carol.id,
+                therapist_id=therapist.id,
+                session_date=(now - timedelta(days=14)).date(),
+                content=(
+                    "Carol appeared slightly more regulated than last session, though still notably "
+                    "fatigued. PCP appointment is scheduled for next week. She completed one element of "
+                    "the sleep hygiene plan (consistent wake time) but found others difficult to maintain. "
+                    "Hopelessness is somewhat reduced — she attributed this to 'feeling heard.' Encouraged "
+                    "continued use of the between-session reflection tool to track mood patterns. Plan: "
+                    "follow up on PCP visit outcomes; closely monitor for disengagement or worsening mood "
+                    "given her recent drop in between-session check-ins."
+                ),
+            ),
+        ]
+
+        db.add_all(notes)
         db.commit()
     finally:
         db.close()
