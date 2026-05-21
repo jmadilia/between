@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { type SOAPNote, getSOAPNotes } from "../api";
 import SOAPNoteForm from "./soap-note-form";
+import { exportSOAPAsTxt, exportSOAPAsPdf } from "../utils/export";
 
 type Props = {
   patientId: number;
+  patientName: string;
 };
 
 const LABELS = ["Subjective", "Objective", "Assessment", "Plan"] as const;
@@ -15,7 +17,7 @@ const FIELD_MAP: Record<Label, keyof SOAPNote> = {
   Plan: "plan",
 };
 
-function SOAPNotesSection({ patientId }: Props) {
+function SOAPNotesSection({ patientId, patientName }: Props) {
   const [notes, setNotes] = useState<SOAPNote[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -96,6 +98,20 @@ function SOAPNotesSection({ patientId }: Props) {
                       </p>
                     </div>
                   ))}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => exportSOAPAsTxt(note, patientName)}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg border border-fog-200 dark:border-fog-700 bg-white dark:bg-fog-900 text-fog-700 dark:text-fog-200 hover:bg-fog-50 dark:hover:bg-fog-700 transition-colors"
+                    >
+                      Export TXT
+                    </button>
+                    <button
+                      onClick={() => exportSOAPAsPdf(note, patientName)}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg border border-fog-200 dark:border-fog-700 bg-white dark:bg-fog-900 text-fog-700 dark:text-fog-200 hover:bg-fog-50 dark:hover:bg-fog-700 transition-colors"
+                    >
+                      Export PDF
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

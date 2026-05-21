@@ -3,7 +3,7 @@ import { type Patient, getPatients } from "../api";
 
 type Props = {
   selectedPatientId: number | null;
-  onSelectPatient: (id: number) => void;
+  onSelectPatient: (id: number, name: string) => void;
 };
 
 function PatientList({ selectedPatientId, onSelectPatient }: Props) {
@@ -19,7 +19,7 @@ function PatientList({ selectedPatientId, onSelectPatient }: Props) {
       {patients.map((patient) => (
         <button
           key={patient.id}
-          onClick={() => onSelectPatient(patient.id)}
+          onClick={() => onSelectPatient(patient.id, patient.name)}
           className={`w-full text-left px-4 py-3 rounded-lg cursor-pointer ${
             selectedPatientId === patient.id
               ? "bg-fog-200 dark:bg-fog-700 text-fog-900 dark:text-fog-50"

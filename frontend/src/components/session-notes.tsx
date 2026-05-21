@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { type Note, getNotes, createNote } from "../api";
+import { exportNotesAsTxt, exportNotesAsPdf } from "../utils/export";
 
 type Props = {
   patientId: number;
+  patientName: string;
 };
 
-function SessionNotes({ patientId }: Props) {
+function SessionNotes({ patientId, patientName }: Props) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [content, setContent] = useState("");
   const [sessionDate, setSessionDate] = useState(
@@ -35,7 +37,25 @@ function SessionNotes({ patientId }: Props) {
 
   return (
     <div className="bg-white dark:bg-fog-700 border border-fog-200 dark:border-fog-700 rounded-lg p-4 flex flex-col gap-3">
-      <h3 className="text-sm font-medium text-fog-900 dark:text-fog-50">Session Notes</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-fog-900 dark:text-fog-50">Session Notes</h3>
+        {notes.length > 0 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportNotesAsTxt(notes, patientName)}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-fog-200 dark:border-fog-700 bg-white dark:bg-fog-900 text-fog-700 dark:text-fog-200 hover:bg-fog-50 dark:hover:bg-fog-700 transition-colors"
+            >
+              Export TXT
+            </button>
+            <button
+              onClick={() => exportNotesAsPdf(notes, patientName)}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-fog-200 dark:border-fog-700 bg-white dark:bg-fog-900 text-fog-700 dark:text-fog-200 hover:bg-fog-50 dark:hover:bg-fog-700 transition-colors"
+            >
+              Export PDF
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">

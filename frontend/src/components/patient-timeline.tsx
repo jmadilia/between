@@ -13,6 +13,7 @@ import SOAPNotesSection from "./soap-notes-section";
 
 type Props = {
   patientId: number | null;
+  patientName: string | null;
 };
 
 type Tab = "overview" | "reflections" | "notes" | "soap";
@@ -31,7 +32,7 @@ const WINDOWS: { label: string; value: InsightWindow }[] = [
   { label: "All", value: "all" },
 ];
 
-function PatientTimeline({ patientId }: Props) {
+function PatientTimeline({ patientId, patientName }: Props) {
   const [tab, setTab] = useState<Tab>("overview");
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [insights, setInsights] = useState<Insights | null>(null);
@@ -196,13 +197,13 @@ function PatientTimeline({ patientId }: Props) {
 
             {tab === "notes" && (
               <div className="p-4">
-                <SessionNotes patientId={patientId} />
+                <SessionNotes patientId={patientId} patientName={patientName ?? "Unknown"} />
               </div>
             )}
 
             {tab === "soap" && (
               <div className="p-4">
-                <SOAPNotesSection patientId={patientId} />
+                <SOAPNotesSection patientId={patientId} patientName={patientName ?? "Unknown"} />
               </div>
             )}
           </>
