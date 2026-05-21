@@ -15,7 +15,7 @@ function TherapistDashboard() {
           onSelectPatient={setSelectedPatientId}
         />
       </div>
-      <div className="lg:col-span-3 bg-fog-50 dark:bg-fog-900 overflow-y-auto">
+      <div className="lg:col-span-3 bg-fog-50 dark:bg-fog-900 flex flex-col min-h-0">
         <PatientTimeline patientId={selectedPatientId} />
       </div>
     </div>
