@@ -64,12 +64,99 @@
 
 ---
 
+---
+
+### Day 13 — TherapistNote Model + Notes API
+
+#### TherapistNote Model
+
+- Created `app/models/therapist_note.py` with fields: `id`, `patient_id`, `therapist_id`, `content`, `session_date` (Date), `created_at` (DateTime with timezone)
+  - `session_date` uses SQLAlchemy `Date` type — therapist records the date of the session, not just when they typed the note
+  - `therapist_id` is stamped server-side from the auth dependency, never trusted from the client
+- Registered model import in `alembic/env.py` and `init_db.py` so `create_all` and autogenerate both see it
+
+#### Schemas
+
+- Added `NoteCreate` — `patient_id`, `content`, `session_date`; `therapist_id` is excluded since it comes from auth
+- Added `NoteRead` — full note shape including `therapist_id` and both timestamps; `from_attributes = True` for ORM serialization
+
+#### Notes API
+
+- `POST /notes/` — validates patient exists and holds `UserRole.patient`, stamps `therapist_id` from `current_user`, returns `NoteRead`; therapist-only
+- `GET /notes/?patient_id=` — returns notes ordered newest session date first; therapist-only
+- Both endpoints guarded by `require_therapist` dependency
+- Router registered in `main.py` under `/notes` prefix
+
+#### Learnings
+
+- `session_date` and `created_at` serve different purposes: `session_date` is the clinical record date (when the session happened), `created_at` is the system audit timestamp (when the note was entered) — keeping both matters for healthcare data
+- Stamping `therapist_id` from the auth dependency rather than accepting it in the request body is the correct pattern — clients should never be able to claim ownership of records
+
+---
+
+### Day 14 — Time-Windowed AI Insights
+
+#### Window Filtering
+
+- Added `?window=week|month|year|all` query param to `GET /insights/{patient_id}` using `Literal` type for FastAPI validation
+- Computed a `since` cutoff datetime from a `_WINDOW_DAYS` lookup dict (`week=7`, `month=30`, `year=365`, `all=None`)
+- Reflections filtered by `created_at >= since`, therapist notes filtered by `session_date >= since.date()`
+- Rule-based `InsightEngine` runs on the already-filtered reflections — mood trend, engagement, and keyword detection all naturally respect the selected window
+- Defaults to `"all"` so existing calls without the param are unaffected
+
+#### AI Prompt Update
+
+- Added `notes: list` parameter to `generate_ai_summary`
+- Added `_format_notes()` helper — formats up to 10 notes as `[YYYY-MM-DD] content` lines, oldest to newest
+- Notes section is conditionally appended to the Claude prompt only when notes exist — no empty section cluttering short prompts
+- Claude now synthesizes both the patient's self-reported reflections and the therapist's clinical observations into a single narrative, giving it genuine two-sided context
+
+#### Learnings
+
+- Separating the window cutoff computation into a `_WINDOW_DAYS` dict keeps the endpoint handler clean — one lookup, no if/elif chains
+- Filtering notes by `session_date` (a `Date`) against `since.date()` (stripping the time component) is required — comparing a `Date` column against a full `datetime` raises a type mismatch in SQLAlchemy
+
+---
+
+### Day 15 — Frontend: Session Notes + Time Window Selector
+
+#### SessionNotes Component
+
+- New `session-notes.tsx` component — self-contained, takes only `patientId` as a prop
+- Date picker input defaulting to today (`new Date().toISOString().split("T")[0]`) — therapist can backdate if entering notes after the fact
+- Textarea + "Save Note" button; button disabled while saving or when content is empty
+- On save, new note is prepended to local state — no refetch needed
+- Notes history renders below the form, newest first, with session date and left-bordered content
+
+#### PatientTimeline Refactor
+
+- Split the single `Promise.all` fetch into two independent `useEffect`s:
+  - Reflections: runs once on `patientId` change — always fetches full history, no window filter
+  - Insights: runs on `patientId` or `window` change — re-fetches and clears stale insights while loading
+- Added `Week / Month / Year / All` button group above the insights panel — active button uses fog accent colors, inactive buttons stay muted
+- Insights panel shows "Generating insights..." while the AI call is in flight
+- Mood chart and reflection card list remain unfiltered — always show full history regardless of window
+
+#### API Client
+
+- Added `Note` type, `NotePayload`, `InsightWindow` union type
+- Added `getNotes(patientId)` and `createNote(data)` functions
+- `getInsights` updated to accept optional `window: InsightWindow` param, defaults to `"all"`
+
+#### Learnings
+
+- Splitting fetches into separate `useEffect`s with different dependency arrays is the right pattern when two pieces of state have different refresh triggers — coupling them in a single `Promise.all` would force reflections to re-fetch every time the window changes
+- `toISOString().split("T")[0]` is the simplest way to get today's date in `YYYY-MM-DD` format for an HTML date input without importing a date library
+- Prepending to local state on successful save (`[note, ...prev]`) gives instant UI feedback without a round-trip re-fetch
+
+---
+
 ### Current Status
 
 - ✅ Backend: Reflection API, migrations, CORS, Insight Engine all working
 - ✅ Frontend: Form scaffold complete, API client wired, data flow end-to-end
 - ✅ Backend: Patients endpoint, User model with roles, seed data all working
-- ✅ Frontend: Typed API client extended with patients, reflections, and insights functions
+- ✅ Frontend: Typed API client extended with patients, reflections, insights, and notes functions
 - ✅ Frontend: Split-view therapist dashboard complete — patient list, timeline, insights, mood colors all working
 - ✅ Frontend: Mood/severity chart and recent reflection excerpt complete
 - ✅ Backend: Pydantic response schemas and `response_model` wired to all endpoints
@@ -79,3 +166,8 @@
 - ✅ Frontend: Peachy Fog design system — consistent light and dark mode across all components
 - ✅ Frontend: Persistent dark mode toggle with system preference fallback
 - ✅ Frontend: NavLink active states, sidebar label, flex layout structure
+- ✅ Backend: Claude API integration — AI-generated pre-session summaries with rule-based fallback
+- ✅ Backend: TherapistNote model, POST /notes, GET /notes — therapist-only, therapist_id stamped from auth
+- ✅ Backend: Time-windowed insights — ?window=week|month|year|all filters reflections and notes
+- ✅ Frontend: Session notes entry with date picker, save, and history list
+- ✅ Frontend: Insight window selector — Week/Month/Year/All re-fetches independently from reflections
