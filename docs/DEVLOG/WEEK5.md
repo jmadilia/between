@@ -68,6 +68,7 @@
 - ✅ Backend: SOAPNote model, AI draft generation, save, and list endpoints
 - ✅ Frontend: SOAP note form with AI generation, manual entry, and review flow
 - ✅ Frontend: SOAP notes section with expandable note history in therapist dashboard
+- ✅ Frontend: Note export — TXT and PDF for session notes (bulk) and SOAP notes (per-note)
 
 ---
 
@@ -160,3 +161,37 @@ Replaced the vertical scroll with four focused tabs at the top of the right pane
 
 - Scroll ownership matters in nested flex layouts — when a child needs to scroll internally, the parent must give up `overflow-y-auto` and instead use `flex flex-col min-h-0` to allow the child to size correctly
 - Tab structure maps directly to clinical workflow: before a session (Overview), reviewing history (Reflections), writing informal notes (Notes), formal documentation (SOAP) — the UI organization should reflect how clinicians actually work, not just how data is modeled
+
+---
+
+### Note Export — TXT and PDF
+
+#### Why export matters
+
+Therapists need to take clinical documentation outside the app: sharing with a supervisor, submitting to an insurer, retaining records in a practice management system. Export is the minimum viable hand-off mechanism that makes Between's notes genuinely usable in real clinical workflows.
+
+#### Implementation
+
+- `frontend/src/utils/export.ts` — four functions using the Blob API (TXT) and jsPDF (PDF)
+  - `exportNotesAsTxt` / `exportNotesAsPdf` — bulk export of all session notes for a patient, newest first
+  - `exportSOAPAsTxt` / `exportSOAPAsPdf` — single SOAP note export, all four sections clearly labeled
+- Filenames are derived from patient name and (for SOAP) session date: `session-notes-alice-johnson.pdf`, `soap-note-alice-johnson-2025-12-01.pdf`
+- PDF layout: bold title and export date header, per-note/per-section headers in bold, body text with automatic page breaks — no external PDF service, no server round-trip
+
+#### UX placement
+
+- **Session notes** — Export TXT and Export PDF appear in the section header, visible whenever notes exist; bulk export covers the full note history
+- **SOAP notes** — export buttons appear at the bottom of each expanded note, scoped to that individual record; matches the clinical need to export specific session documentation rather than a full dump
+
+#### Patient name threading
+
+The patient name wasn't previously surfaced below `PatientList`. Threaded it through the component tree without a global store:
+- `PatientList.onSelectPatient` callback widened from `(id: number)` to `(id: number, name: string)`
+- `TherapistDashboard` tracks `selectedPatientName` in local state alongside `selectedPatientId`
+- `PatientTimeline` receives `patientName` and forwards it to `SessionNotes` and `SOAPNotesSection`
+
+#### Learnings
+
+- Frontend-only export (Blob + jsPDF) is the right default for MVP — no backend surface, no storage, no new auth concerns; the generated file is identical to what a server would produce
+- Bulk export for session notes and per-note export for SOAP notes reflect how clinicians actually use the two formats: informal notes are reviewed as a whole; SOAP notes are formal records that get submitted individually
+- Widening a callback signature (`onSelectPatient`) is cleaner than introducing a global store for a single derived value — keep state as local as it can be until the need genuinely spans the tree
