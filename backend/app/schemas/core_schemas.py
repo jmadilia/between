@@ -68,3 +68,31 @@ class NoteRead(BaseModel):
 
   class Config:
     from_attributes = True
+
+
+class SOAPNoteDraft(BaseModel):
+  subjective: str
+  objective: str
+  assessment: str
+  plan: str
+
+
+class SOAPNoteCreate(SOAPNoteDraft):
+  patient_id: int = Field(..., gt=0)
+  session_date: date
+
+
+class SOAPNoteRead(SOAPNoteDraft):
+  id: int
+  patient_id: int
+  therapist_id: int
+  session_date: date
+  created_at: datetime
+
+  class Config:
+    from_attributes = True
+
+
+class SOAPNoteGenerateRequest(BaseModel):
+  patient_id: int = Field(..., gt=0)
+  session_date: date

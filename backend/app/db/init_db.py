@@ -5,6 +5,7 @@ from app.models.core_models import Base
 from app.models.reflection import Reflection
 from app.models.session_summary import SessionSummary
 from app.models.therapist_note import TherapistNote
+from app.models.soap_note import SOAPNote
 from app.models.user import User, UserRole
 
 
