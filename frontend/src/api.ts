@@ -47,8 +47,6 @@ export type NotePayload = {
   session_date: string;
 };
 
-export type InsightWindow = "week" | "month" | "year" | "all";
-
 export async function submitReflection(
   data: ReflectionPayload,
 ): Promise<Reflection> {
@@ -68,9 +66,10 @@ export async function getReflections(patientId: number): Promise<Reflection[]> {
 
 export async function getInsights(
   patientId: number,
-  window: InsightWindow = "all",
+  fromDate?: string,
 ): Promise<Insights> {
-  const response = await api.get(`/insights/${patientId}?window=${window}`);
+  const params = fromDate ? `?from_date=${fromDate}` : "";
+  const response = await api.get(`/insights/${patientId}${params}`);
   return response.data;
 }
 

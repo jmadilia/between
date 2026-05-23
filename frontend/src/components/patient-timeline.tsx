@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import {
   type Reflection,
   type Insights,
-  type InsightWindow,
   getReflections,
   getInsights,
 } from "../api";
@@ -25,18 +24,17 @@ const TABS: { label: string; value: Tab }[] = [
   { label: "Documentation", value: "soap" },
 ];
 
-const WINDOWS: { label: string; value: InsightWindow }[] = [
-  { label: "Week", value: "week" },
-  { label: "Month", value: "month" },
-  { label: "Year", value: "year" },
-  { label: "All", value: "all" },
-];
+function defaultFromDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString().split("T")[0];
+}
 
 function PatientTimeline({ patientId, patientName }: Props) {
   const [tab, setTab] = useState<Tab>("overview");
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [insights, setInsights] = useState<Insights | null>(null);
-  const [window, setWindow] = useState<InsightWindow>("all");
+  const [fromDate, setFromDate] = useState(defaultFromDate);
   const [loadingReflections, setLoadingReflections] = useState(false);
   const [generating, setGenerating] = useState(false);
 
@@ -58,7 +56,7 @@ function PatientTimeline({ patientId, patientName }: Props) {
     if (patientId === null) return;
     setGenerating(true);
     try {
-      const data = await getInsights(patientId, window);
+      const data = await getInsights(patientId, fromDate);
       setInsights(data);
     } finally {
       setGenerating(false);
@@ -108,23 +106,15 @@ function PatientTimeline({ patientId, patientName }: Props) {
                       <span className="text-sm font-medium text-fog-900 dark:text-fog-50">Pre-Session Summary</span>
                       <span className="text-xs text-fog-400">AI-generated from reflections and session notes</span>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-xs text-fog-400">Time window</span>
-                      <div className="flex rounded-lg overflow-hidden border border-fog-200 dark:border-fog-700">
-                        {WINDOWS.map(({ label, value }) => (
-                          <button
-                            key={value}
-                            onClick={() => setWindow(value)}
-                            className={`px-3 py-1 text-xs font-medium transition-colors ${
-                              window === value
-                                ? "bg-fog-700 dark:bg-fog-200 text-fog-50 dark:text-fog-900"
-                                : "bg-white dark:bg-fog-700 text-fog-700 dark:text-fog-400 hover:bg-fog-50 dark:hover:bg-fog-900"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-fog-400">From</label>
+                      <input
+                        type="date"
+                        value={fromDate}
+                        max={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => { setFromDate(e.target.value); setInsights(null); }}
+                        className="text-xs border border-fog-200 dark:border-fog-900 rounded px-2 py-1 bg-fog-50 dark:bg-fog-900 text-fog-900 dark:text-fog-50 focus:outline-none focus:ring-1 focus:ring-fog-400"
+                      />
                     </div>
                   </div>
 
@@ -171,7 +161,7 @@ function PatientTimeline({ patientId, patientName }: Props) {
                   ) : (
                     <div className="bg-white dark:bg-fog-700 border border-fog-200 dark:border-fog-700 rounded-lg p-4 flex flex-col items-center gap-3 py-6">
                       <p className="text-sm text-fog-400 text-center">
-                        No summary yet. Select a time window above and generate a pre-session brief.
+                        No summary yet. Set a start date above and generate a pre-session brief.
                       </p>
                       <button
                         onClick={handleGenerate}
