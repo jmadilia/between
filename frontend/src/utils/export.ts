@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import type { Note, SOAPNote } from "../api";
+import type { Note, SOAPNote, DAPNote } from "../api";
 
 function formatDate(dateStr: string, timeZone = "UTC") {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -156,4 +156,80 @@ export function exportSOAPAsPdf(note: SOAPNote, patientName: string) {
 
   const slug = `${patientName.replace(/\s+/g, "-").toLowerCase()}-${note.session_date}`;
   doc.save(`soap-note-${slug}.pdf`);
+}
+
+export function exportDAPAsTxt(note: DAPNote, patientName: string) {
+  const lines = [
+    `DAP Note — ${patientName}`,
+    `Session date: ${formatDate(note.session_date)}`,
+    "",
+    "DATA",
+    note.data,
+    "",
+    "ASSESSMENT",
+    note.assessment,
+    "",
+    "PLAN",
+    note.plan,
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const slug = `${patientName.replace(/\s+/g, "-").toLowerCase()}-${note.session_date}`;
+  triggerDownload(blob, `dap-note-${slug}.txt`);
+}
+
+export function exportDAPAsPdf(note: DAPNote, patientName: string) {
+  const doc = new jsPDF();
+  const margin = 15;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const maxWidth = pageWidth - margin * 2;
+  let y = margin;
+
+  function maybeNewPage(needed: number) {
+    if (y + needed > doc.internal.pageSize.getHeight() - margin) {
+      doc.addPage();
+      y = margin;
+    }
+  }
+
+  function writeSectionBody(text: string) {
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(text, maxWidth) as string[];
+    for (const line of lines) {
+      maybeNewPage(6);
+      doc.text(line, margin, y);
+      y += 5;
+    }
+    y += 4;
+  }
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text(`DAP Note — ${patientName}`, margin, y);
+  y += 7;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(130);
+  doc.text(`Session date: ${formatDate(note.session_date)}`, margin, y);
+  doc.setTextColor(0);
+  y += 10;
+
+  const sections: [string, string][] = [
+    ["DATA", note.data],
+    ["ASSESSMENT", note.assessment],
+    ["PLAN", note.plan],
+  ];
+
+  for (const [label, content] of sections) {
+    maybeNewPage(14);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(label, margin, y);
+    y += 6;
+    writeSectionBody(content);
+  }
+
+  const slug = `${patientName.replace(/\s+/g, "-").toLowerCase()}-${note.session_date}`;
+  doc.save(`dap-note-${slug}.pdf`);
 }

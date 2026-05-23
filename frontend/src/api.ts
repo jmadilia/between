@@ -124,3 +124,43 @@ export async function getSOAPNotes(patientId: number): Promise<SOAPNote[]> {
   const response = await api.get(`/soap-notes/?patient_id=${patientId}`);
   return response.data;
 }
+
+export type DAPDraft = {
+  data: string;
+  assessment: string;
+  plan: string;
+};
+
+export type DAPNote = DAPDraft & {
+  id: number;
+  patient_id: number;
+  therapist_id: number;
+  session_date: string;
+  created_at: string;
+};
+
+export type DAPNotePayload = DAPDraft & {
+  patient_id: number;
+  session_date: string;
+};
+
+export async function generateDAPDraft(
+  patientId: number,
+  sessionDate: string,
+): Promise<DAPDraft> {
+  const response = await api.post("/dap-notes/generate", {
+    patient_id: patientId,
+    session_date: sessionDate,
+  });
+  return response.data;
+}
+
+export async function createDAPNote(data: DAPNotePayload): Promise<DAPNote> {
+  const response = await api.post("/dap-notes/", data);
+  return response.data;
+}
+
+export async function getDAPNotes(patientId: number): Promise<DAPNote[]> {
+  const response = await api.get(`/dap-notes/?patient_id=${patientId}`);
+  return response.data;
+}

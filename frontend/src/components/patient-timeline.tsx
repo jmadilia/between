@@ -9,7 +9,7 @@ import {
 import ReflectionCard from "./reflection-card";
 import MoodChart from "./mood-chart";
 import SessionNotes from "./session-notes";
-import SOAPNotesSection from "./soap-notes-section";
+import DocumentationTab from "./documentation-tab";
 
 type Props = {
   patientId: number | null;
@@ -22,7 +22,7 @@ const TABS: { label: string; value: Tab }[] = [
   { label: "Overview", value: "overview" },
   { label: "Reflections", value: "reflections" },
   { label: "Notes", value: "notes" },
-  { label: "SOAP Notes", value: "soap" },
+  { label: "Documentation", value: "soap" },
 ];
 
 const WINDOWS: { label: string; value: InsightWindow }[] = [
@@ -203,7 +203,7 @@ function PatientTimeline({ patientId, patientName }: Props) {
 
             {tab === "soap" && (
               <div className="p-4">
-                <SOAPNotesSection patientId={patientId} patientName={patientName ?? "Unknown"} />
+                <DocumentationTab patientId={patientId} patientName={patientName ?? "Unknown"} />
               </div>
             )}
           </>
