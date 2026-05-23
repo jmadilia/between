@@ -96,3 +96,30 @@ class SOAPNoteRead(SOAPNoteDraft):
 class SOAPNoteGenerateRequest(BaseModel):
   patient_id: int = Field(..., gt=0)
   session_date: date
+
+
+class DAPNoteDraft(BaseModel):
+  data: str
+  assessment: str
+  plan: str
+
+
+class DAPNoteCreate(DAPNoteDraft):
+  patient_id: int = Field(..., gt=0)
+  session_date: date
+
+
+class DAPNoteRead(DAPNoteDraft):
+  id: int
+  patient_id: int
+  therapist_id: int
+  session_date: date
+  created_at: datetime
+
+  class Config:
+    from_attributes = True
+
+
+class DAPNoteGenerateRequest(BaseModel):
+  patient_id: int = Field(..., gt=0)
+  session_date: date
