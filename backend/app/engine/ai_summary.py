@@ -29,6 +29,31 @@ def _format_notes(notes: list) -> str:
     return "\n".join(lines)
 
 
+def _format_soap_notes(soap_notes: list) -> str:
+    lines = []
+    for n in soap_notes[-5:]:
+        lines.append(
+            f"[{n.session_date}] "
+            f"Subjective: {n.subjective[:200].replace(chr(10), ' ')} | "
+            f"Objective: {n.objective[:200].replace(chr(10), ' ')} | "
+            f"Assessment: {n.assessment[:200].replace(chr(10), ' ')} | "
+            f"Plan: {n.plan[:200].replace(chr(10), ' ')}"
+        )
+    return "\n".join(lines)
+
+
+def _format_dap_notes(dap_notes: list) -> str:
+    lines = []
+    for n in dap_notes[-5:]:
+        lines.append(
+            f"[{n.session_date}] "
+            f"Data: {n.data[:200].replace(chr(10), ' ')} | "
+            f"Assessment: {n.assessment[:200].replace(chr(10), ' ')} | "
+            f"Plan: {n.plan[:200].replace(chr(10), ' ')}"
+        )
+    return "\n".join(lines)
+
+
 async def generate_ai_summary(
     patient_name: str,
     reflections: list,
@@ -36,6 +61,8 @@ async def generate_ai_summary(
     trends: list[str],
     flags: list[str],
     fallback_summary: str,
+    soap_notes: list | None = None,
+    dap_notes: list | None = None,
 ) -> str:
     if not reflections or not settings.ANTHROPIC_API_KEY:
         return fallback_summary
@@ -46,21 +73,29 @@ async def generate_ai_summary(
 
     notes_section = (
         f"\nTherapist session notes (oldest to newest):\n{_format_notes(notes)}"
-        if notes
-        else ""
+        if notes else ""
+    )
+    soap_section = (
+        f"\nSOAP notes from this period (oldest to newest):\n{_format_soap_notes(soap_notes)}"
+        if soap_notes else ""
+    )
+    dap_section = (
+        f"\nDAP notes from this period (oldest to newest):\n{_format_dap_notes(dap_notes)}"
+        if dap_notes else ""
     )
 
     prompt = f"""You are a clinical decision support tool used by a licensed therapist. \
-Based on the patient's between-session reflections and any therapist session notes, \
-write a 2-4 sentence pre-session brief. Be concise and clinical — focus on mood patterns, \
-recurring themes, and anything that warrants attention in the upcoming session. \
+Based on the patient's between-session reflections, therapist session notes, and any formal \
+clinical documentation (SOAP or DAP notes), write a 2-4 sentence pre-session brief. \
+Be concise and clinical — focus on mood patterns, recurring themes, progress against prior \
+plans, and anything that warrants attention in the upcoming session. \
 Do not give diagnoses or treatment recommendations. \
 Write only the brief with no preamble or labels.
 
 Patient: {patient_name}
 
 Patient reflections (oldest to newest):
-{reflection_text}{notes_section}
+{reflection_text}{notes_section}{soap_section}{dap_section}
 
 Detected patterns:
 - Mood trends: {trends_text}
