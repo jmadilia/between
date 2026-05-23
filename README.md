@@ -1,59 +1,55 @@
 # Between
 
-Between is a between-session reflection platform that helps patients track mood, symptoms, and goals, while providing therapists with AI-generated summaries and session notes to guide care.
-
-## Problem & Solution
-
-### The Problem
-
-Therapy sessions are limited in time. The most important context is often lost between visits. Patients struggle to reflect consistently between sessions. Therapists lack structured insight into how patients are doing outside of regular visits.
-
-### The Solution
-
-Between bridges that gap. Patients submit quick reflections (mood, symptoms, free-text notes) between sessions. Therapists receive structured, explainable insights to understand trends and spot issues before the next session—so they can spend less time catching up and more time treating.
+Between is a between-session reflection platform for mental health care. Patients log mood, symptoms, and reflections between sessions. Therapists get AI-generated pre-session briefs, structured clinical documentation, and exportable records — so they spend less time catching up and more time treating.
 
 ---
 
-## Users & Core Value
+## What It Does
 
 ### For Patients
-
-- **Reflection** between sessions builds awareness and better session preparation
-- Track **mood trends** and **symptom severity** over time
-- Prepare **concrete examples** for therapist discussions
+- Submit between-session reflections: mood (1–5), symptom severity (1–5), free-text note
+- View personal reflection history
 
 ### For Therapists
-
-- **AI-generated pre-session summaries** synthesize patient reflections and session notes into a clinical narrative
-- **Session notes** let therapists log observations after each visit, creating a two-sided record
-- **Time-windowed insights** — pull a weekly check-in, monthly progress snapshot, or full-history summary on demand
-- **Mood trends** highlight patterns and changes over time
-- **Engagement tracking** flags missed reflections
-- **Keyword detection** surfaces recurring stress factors (sleep, work, anxiety)
+- **Split-view dashboard** — patient list alongside a tabbed detail panel (Overview, Reflections, Notes, Documentation)
+- **AI pre-session brief** — Claude synthesizes patient reflections, session notes, and formal clinical documentation from a selected date range into a 2–4 sentence clinical narrative
+- **Mood trend chart** — Recharts visualization of mood and severity over time
+- **Session notes** — informal, free-text observations tied to a session date
+- **SOAP notes** — AI-drafted or manually written; Subjective, Objective, Assessment, Plan
+- **DAP notes** — AI-drafted or manually written; Data, Assessment, Plan
+- **Documentation tab** — SOAP/DAP type selector so practices that use only one format aren't confronted with the other
+- **Note export** — session notes as bulk TXT/PDF; SOAP and DAP notes as per-note TXT/PDF
+- **Engagement signals** — keyword detection, mood trends, and engagement flags surface automatically in the pre-session brief
 
 ---
 
-## MVP Feature Set
+## Tech Stack
 
-### Patient Features
+### Backend
+- **FastAPI** (Python) — async API with role-based auth dependency injection
+- **PostgreSQL** + **SQLAlchemy** ORM with typed `Mapped` columns
+- **Pydantic v2** — request/response schemas with `response_model` on every endpoint
+- **Anthropic Python SDK** — Claude `claude-opus-4-7` for pre-session briefs, SOAP drafts, and DAP drafts
 
-- Submit reflection with:
-  - Mood (1–5 scale)
-  - Symptom severity (1–5 scale)
-  - Free-text reflection
-- View reflection history
+### Frontend
+- **React 19** + **TypeScript** + **Vite**
+- **Tailwind CSS v4** with a custom `@theme` design system (Peachy Fog palette)
+- **Recharts** — mood/severity trend visualization
+- **React Router v6**
+- **jsPDF** — client-side PDF export with no server round-trip
+- **Axios** — typed API client
 
-### Therapist Features
+---
 
-- Patient timeline (list of reflections)
-- Mood trend visualization
-- Session notes — log observations after each visit
-- AI-generated pre-session summary (Claude `opus-4-7`) with:
-  - Clinical narrative synthesized from patient reflections and therapist notes
-  - Key mood/symptom trends
-  - Engagement status
-  - Notable keywords and themes
-- Time-windowed insights: Week / Month / Year / All time
+## Architecture Highlights
+
+**Hybrid intelligence.** The insight engine runs two layers: a deterministic rule-based pass (mood trend direction, engagement gap detection, keyword frequency) followed by a Claude API call that synthesizes those signals into a clinical narrative. Rule-based signals are always computed; Claude adds the narrative layer on top. If the API key is absent or the call fails, the endpoint falls back to the rule-based summary rather than erroring.
+
+**Two-sided clinical record.** Patient reflections and therapist documentation (session notes, SOAP, DAP) are stored separately and combined only at insight-generation time. Each record type is role-gated at the API level — patients cannot read therapist notes, therapists cannot submit reflections on behalf of patients.
+
+**AI draft, human save.** The SOAP and DAP generation endpoints (`POST /soap-notes/generate`, `POST /dap-notes/generate`) return a draft and never write to the database. The therapist reviews and edits, then calls a separate save endpoint. This boundary is intentional: AI output is never committed as a medical record without explicit clinician sign-off.
+
+**Full clinical context in the brief.** The pre-session insight endpoint queries all four data sources within the selected date range — patient reflections, informal session notes, SOAP notes, and DAP notes — and passes them all to Claude. Prior assessments and treatment plans from formal documentation are surfaced in the brief, not just self-reports.
 
 ---
 
@@ -63,167 +59,195 @@ Between bridges that gap. Patients submit quick reflections (mood, symptoms, fre
 between/
 ├── backend/
 │   ├── app/
-│   │   ├── core/          # Configuration, auth stubs
-│   │   ├── db/            # Database session, initialization
-│   │   ├── models/        # SQLAlchemy ORM models (User, Reflection, TherapistNote)
-│   │   ├── schemas/       # Pydantic request/response schemas
-│   │   ├── engine/        # Insight generation (rule-based + AI summary)
-│   │   │   ├── insight_engine.py  # Deterministic mood/engagement/keyword analysis
-│   │   │   └── ai_summary.py      # Claude API integration for clinical narratives
-│   │   └── main.py        # FastAPI app setup and routing
-│   ├── routers/           # API endpoint handlers
-│   ├── alembic/           # Database migrations
+│   │   ├── core/               # Settings, config
+│   │   ├── db/                 # Session, init and seed script
+│   │   ├── models/             # SQLAlchemy models
+│   │   │   ├── user.py         # User with role enum (patient / therapist)
+│   │   │   ├── reflection.py
+│   │   │   ├── therapist_note.py
+│   │   │   ├── soap_note.py
+│   │   │   └── dap_note.py
+│   │   ├── schemas/
+│   │   │   └── core_schemas.py # All Pydantic request/response types
+│   │   ├── engine/
+│   │   │   ├── insight_engine.py  # Rule-based trend/flag/engagement analysis
+│   │   │   ├── ai_summary.py      # Pre-session brief via Claude
+│   │   │   ├── ai_soap.py         # SOAP draft generation via Claude
+│   │   │   └── ai_dap.py          # DAP draft generation via Claude
+│   │   └── main.py
+│   ├── routers/
+│   │   ├── reflections.py
+│   │   ├── insights.py
+│   │   ├── patients.py
+│   │   ├── notes.py
+│   │   ├── soap_notes.py
+│   │   └── dap_notes.py
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── components/    # Reusable React components
-│   │   ├── pages/         # Page-level components (patient form, therapist dashboard)
-│   │   ├── api.ts         # Typed API client
-│   │   └── App.tsx        # Routing, layout, and theme
+│   │   ├── components/         # ReflectionCard, MoodChart, SessionNotes,
+│   │   │   │                   # SOAPNoteForm, DAPNoteForm, DocumentationTab, ...
+│   │   ├── pages/              # PatientReflection, TherapistDashboard
+│   │   ├── utils/
+│   │   │   └── export.ts       # TXT and PDF export for all note types
+│   │   ├── api.ts              # Fully typed Axios client
+│   │   └── App.tsx
 │   └── package.json
-└── docs/                  # Dev logs and planning
+└── docs/
+    ├── DEVLOG/                 # Week-by-week engineering notes
+    └── SECURITY.md             # Auth model and known HIPAA gaps
 ```
 
 ---
 
 ## Getting Started
 
-### Backend Setup
-
-1. **Install dependencies:**
-
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-2. **Set up environment:**
-
-   ```bash
-   cp .env.example .env
-   # Edit .env with your credentials:
-   # DATABASE_URL=postgresql://user:password@localhost/between
-   # ANTHROPIC_API_KEY=sk-ant-...   (required for AI-generated summaries)
-   ```
-
-3. **Initialize database and seed data:**
-
-   ```bash
-   python -m alembic upgrade head
-   python app/db/init_db.py
-   ```
-
-4. **Run the server:**
-   ```bash
-   python -m uvicorn app.main:app --reload
-   ```
-
-   - API available at `http://localhost:8000`
-   - Docs at `http://localhost:8000/docs`
-
-### Frontend Setup
-
-1. **Install dependencies:**
-
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. **Run dev server:**
-   ```bash
-   npm run dev
-   ```
-
-   - Available at `http://localhost:5173`
-
----
-
-## API Endpoints
-
-### Reflections
-
-- `POST /reflections` — Submit a new reflection (patient only)
-  - Body: `{ patient_id, mood, symptom_severity, content }`
-  - Returns: Created reflection object
-
-- `GET /reflections?patient_id=<id>` — Retrieve patient's reflection history
-  - Returns: Array of reflection objects
-
-### Patients
-
-- `GET /patients` — List all patients (therapist only)
-  - Returns: Array of patient objects
-
-### Notes
-
-- `POST /notes` — Create a therapist session note (therapist only)
-  - Body: `{ patient_id, content, session_date }`
-  - Returns: Created note object
-
-- `GET /notes?patient_id=<id>` — Retrieve session notes for a patient (therapist only)
-  - Returns: Array of note objects
-
-### Insights
-
-- `GET /insights/{patient_id}?window=week|month|year|all` — Get AI-generated insights for a patient (therapist only)
-  - Filters reflections and therapist notes by the selected time window
-  - Returns: `{ trends, flags, summary }` — rule-based signals + AI clinical narrative
-
-### Health
-
-- `GET /health` — Service health check
-
----
-
-## Tech Stack
-
-### Frontend
-
-- React 19 with TypeScript
-- Vite (build tool)
-- Tailwind CSS v4 (Peachy Fog design system, light/dark mode)
-- Recharts (mood/severity trend chart)
-- React Router v6
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL running locally
 
 ### Backend
 
-- FastAPI (Python)
-- PostgreSQL (database)
-- SQLAlchemy (ORM)
-- Pydantic (validation)
-- Alembic (migrations)
-- Anthropic Python SDK (Claude `opus-4-7` for AI summaries)
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+pip install -r requirements.txt
+```
+
+Copy and fill in the environment file:
+
+```bash
+cp .env.example .env
+```
+
+```env
+DATABASE_URL=postgresql://user:password@localhost/between
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Initialize the database and load seed data (three demo patients with realistic reflection and note histories):
+
+```bash
+python app/db/init_db.py
+```
+
+Start the server:
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+API runs at `http://localhost:8000` — interactive docs at `http://localhost:8000/docs`.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+```
+
+Create a `.env.local`:
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+```bash
+npm run dev
+```
+
+App runs at `http://localhost:5173`.
 
 ---
 
-## Design Principles
+## API Reference
 
-- **Hybrid intelligence:** Rule-based signals (mood trends, engagement, keyword flags) are deterministic and auditable. Claude synthesizes them into a clinical narrative — it explains patterns, it doesn't diagnose.
-- **Two-sided context:** Therapist notes and patient reflections are kept separate and combined only at insight-generation time, so each record is clean and role-appropriate.
-- **Healthcare-aware:** Data isolation, role-based access, audit-friendly structure throughout.
-- **Simple & focused:** No scheduling, messaging, or notifications in MVP.
-- **Patient-first:** Empathetic UX, clear language, minimal friction.
+### Reflections
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/reflections/` | Submit a reflection (patient) |
+| `GET` | `/reflections/?patient_id=` | Reflection history for a patient |
+
+### Patients
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/patients/` | List all patients (therapist only) |
+
+### Session Notes
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/notes/` | Create a session note (therapist only) |
+| `GET` | `/notes/?patient_id=` | Notes for a patient |
+
+### Insights
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/insights/{patient_id}?from_date=YYYY-MM-DD` | AI pre-session brief from a date through today |
+
+### SOAP Notes
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/soap-notes/generate` | Generate AI draft (no DB write) |
+| `POST` | `/soap-notes/` | Save reviewed note |
+| `GET` | `/soap-notes/?patient_id=` | SOAP note history |
+
+### DAP Notes
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/dap-notes/generate` | Generate AI draft (no DB write) |
+| `POST` | `/dap-notes/` | Save reviewed note |
+| `GET` | `/dap-notes/?patient_id=` | DAP note history |
+
+### Health
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Service health check |
 
 ---
 
-## Scope Lock
+## Seed Data
 
-### Out of Scope (for now)
+The seed script creates three demo patients with distinct clinical narratives — useful for demonstrating the AI engine across different scenarios:
 
-- Scheduling
-- Messaging
-- Notifications
-- HIPAA certification claims
-- Diagnosis or treatment recommendations
-- AI acting as a therapist or giving clinical advice
+- **Alice Johnson** — declining mood arc, escalating work stress, sleep disruption
+- **Bob Smith** — recovery arc, behavioral activation working, anxiety reducing
+- **Carol Rivera** — disengagement risk, severe fatigue, last check-in 15+ days ago
+
+Each patient has reflection history, therapist session notes, and enough temporal spread that the date-range filter on the pre-session brief produces meaningfully different summaries.
 
 ---
 
-## Development
+## Design Decisions
 
-See `docs/PLAN.md` for the week-by-week development roadmap.
-See `docs/DEVLOG/` for detailed progress notes.
+**Why rule-based signals before Claude?** Deterministic signals (engagement gap, mood trend direction, keyword frequency) are always computable and auditable. Claude is expensive and fallible — the rule layer ensures the endpoint always returns something useful even without an API key.
 
+**Why no auto-save on AI drafts?** Clinical documentation is a legal record. The generate endpoint exists specifically to prevent AI output from being committed without explicit therapist review. The two-step flow (generate → review → save) is a deliberate product boundary, not a convenience feature.
+
+**Why a date picker instead of preset windows?** Therapists don't think in "last 30 days" — they think in "since our last session on May 12th." A free date input maps to that mental model. The preset windows (Week/Month/Year) optimized for speed at the cost of precision.
+
+**Why separate SOAP and DAP rather than one configurable note type?** The formats have different clinical semantics, not just different field counts. DAP's Data section integrates subjective and objective into a unified account — the AI prompt, the field descriptions, and the clinical guidance are all different. Sharing a model would conflate them.
+
+---
+
+## Production Readiness and HIPAA
+
+**This project is a working prototype, not a HIPAA-compliant clinical product.**
+
+Mental health records are Protected Health Information (PHI) under HIPAA. Deploying Between to a real clinical practice requires significant additional work before any patient data can be handled:
+
+- **Authentication** — auth is currently stubbed; role is trust-from-header for demo purposes. A real deployment needs proper credential management, session handling, and MFA support.
+- **HIPAA-compliant infrastructure** — hosting providers must sign a Business Associate Agreement (BAA). Railway and Vercel will not. AWS, Google Cloud, and Aptible will.
+- **BAA with Anthropic** — patient data is sent to Claude for summary generation. Anthropic offers a BAA under their enterprise tier, which is required before any PHI can be processed.
+- **Audit logging** — HIPAA requires a tamper-evident record of who accessed what PHI and when. Nothing in the current codebase implements this.
+- **Multi-tenancy** — the data model has no practice-level isolation. A production system needs a `practice_id` on every record so multiple organizations can share infrastructure safely.
+
+See [`docs/SECURITY.md`](docs/SECURITY.md) for a detailed breakdown of the current auth model and known gaps.
+
+---
+
+## Development Notes
+
+Week-by-week engineering decisions, architecture notes, and learnings are in [`docs/DEVLOG/`](docs/DEVLOG/).
