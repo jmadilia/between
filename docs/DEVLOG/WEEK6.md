@@ -29,6 +29,8 @@
 - ✅ Backend: DAPNote model, AI draft generation, save, and list endpoints
 - ✅ Frontend: DAP note form with AI generation, manual entry, and review flow
 - ✅ Frontend: Documentation tab — SOAP/DAP type selector, only selected format shown at a time
+- ✅ Frontend: Pre-session summary uses a "from date" picker instead of preset windows
+- ✅ Backend: Pre-session insight engine incorporates SOAP and DAP notes alongside reflections and session notes
 
 ---
 
@@ -88,3 +90,33 @@ The previous design gave SOAP notes their own tab ("SOAP Notes"). Adding DAP not
 
 - A format selector within a single tab scales better than one tab per format — each new note type added to the selector costs one button, not one tab
 - Defaulting to SOAP is the right call for now since it's the more universally recognized format; this default should be configurable per practice if the app grows toward multi-tenant support
+
+---
+
+### Day 20 — Pre-Session Summary: Date Picker and Full Clinical Context
+
+#### The preset window problem
+
+The Week/Month/Year/All segmented control had two issues. First, the connection between the selected window and the generated summary wasn't obvious in the UI — nothing made clear that changing the window changed what Claude saw. Second, the presets don't map to how therapists actually think about time. A therapist doesn't want "the last 30 days" — they want "since our last session on May 12th." A free date picker matches that mental model directly.
+
+#### Date picker replacing the window selector
+
+- `from_date: date | None` query param replaces `window: Literal[...]` on `GET /insights/{patient_id}`
+- Frontend: `InsightWindow` type and the `WINDOWS` array removed; `window` state replaced with `fromDate` (string, `YYYY-MM-DD`), defaulting to 7 days ago
+- Changing the date clears the existing summary immediately — stale results from a previous window can't persist visually
+- Input is capped at today with `max={today}` so future dates can't be entered
+
+#### Incorporating SOAP and DAP notes into the brief
+
+The pre-session summary was previously built from reflections and informal session notes only. SOAP and DAP notes — which contain the therapist's own structured assessment and plan from prior sessions — were being ignored entirely. Those are the most clinically valuable inputs for a pre-session brief: they tell Claude what was formally concluded last time and what was planned going forward.
+
+- `generate_ai_summary()` extended with `soap_notes` and `dap_notes` optional parameters
+- New `_format_soap_notes()` and `_format_dap_notes()` helpers truncate each field to 200 characters and join with pipe separators for readability in the prompt
+- Prompt updated: added "progress against prior plans" to the brief's focus areas, making Claude aware it has access to Assessment and Plan fields from prior documentation
+- Insights router queries all four sources (`Reflection`, `TherapistNote`, `SOAPNote`, `DAPNote`) within the date range and passes them all to the engine
+
+#### Learnings
+
+- Preset time windows optimize for speed at the cost of precision; for a deliberate act like generating a clinical brief, precision wins — a date picker is the right control
+- Passing empty lists vs. `None` matters for conditional prompt sections: using `or None` on an empty query result keeps the prompt clean by omitting sections that have no data rather than injecting empty headers
+- The pre-session brief is only as good as the data it sees — adding SOAP and DAP notes as inputs is a qualitative improvement, not just a feature addition
