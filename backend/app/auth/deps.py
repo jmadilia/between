@@ -18,4 +18,4 @@ def require_therapist(current_user: User = Depends(get_current_user)) -> User:
 def require_patient(current_user: User = Depends(get_current_user)) -> User:
   if current_user.role != UserRole.patient:
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Patient access required.")
-  
+  return current_user

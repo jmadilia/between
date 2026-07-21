@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import reflections, insights, patients, notes, soap_notes, dap_notes
+from routers import reflections, insights, patients, notes, soap_notes, dap_notes, onboarding
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Between API")
@@ -18,6 +18,7 @@ def register_routers(app: FastAPI) -> None:
   app.include_router(notes.router, prefix="/notes", tags=["notes"])
   app.include_router(soap_notes.router, prefix="/soap-notes", tags=["soap-notes"])
   app.include_router(dap_notes.router, prefix="/dap-notes", tags=["dap-notes"])
+  app.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 
 register_routers(app)
 

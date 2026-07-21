@@ -17,7 +17,8 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.models.core_models import Base
-from app.models import reflection, user, session_summary, therapist_note, soap_note
+from app.models import reflection, user, session_summary, therapist_note, soap_note, dap_note
+from app.models import patient_profile, onboarding_screener
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

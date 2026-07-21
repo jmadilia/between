@@ -1,13 +1,16 @@
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.db.session import SessionLocal, engine
 from app.models.core_models import Base
+
 from app.models.reflection import Reflection
 from app.models.session_summary import SessionSummary
 from app.models.therapist_note import TherapistNote
 from app.models.soap_note import SOAPNote
 from app.models.dap_note import DAPNote
 from app.models.user import User, UserRole
+from app.models.patient_profile import PatientProfile
+from app.models.onboarding_screener import OnboardingScreener
 
 
 def init_db():
@@ -143,6 +146,58 @@ def init_db():
         ]
 
         db.add_all(notes)
+        db.flush()
+
+        profiles = [
+            PatientProfile(
+                patient_id=alice.id,
+                date_of_birth=date(1990, 3, 14),
+                pronouns="she/her",
+                emergency_contact_name="Mark Johnson",
+                emergency_contact_phone="555-0101",
+                presenting_concerns="Chronic work-related stress, difficulty setting boundaries, recurring sleep problems that worsen during high-pressure periods.",
+                goals="Develop sustainable coping strategies for workplace stress\nImprove sleep hygiene and consistency\nBuild confidence in asserting boundaries with colleagues",
+                onboarding_completed=True,
+                consent_given=True,
+            ),
+            PatientProfile(
+                patient_id=bob.id,
+                date_of_birth=date(1985, 7, 22),
+                pronouns="he/him",
+                emergency_contact_name="Linda Smith",
+                emergency_contact_phone="555-0202",
+                presenting_concerns="Generalized anxiety, particularly around family dynamics and financial stress. Tendency toward social withdrawal when anxious.",
+                goals="Reduce avoidance behaviors\nImprove ability to tolerate uncertainty\nStrengthen communication with family members",
+                onboarding_completed=True,
+                consent_given=True,
+            ),
+            PatientProfile(
+                patient_id=carol.id,
+                date_of_birth=date(1978, 11, 5),
+                pronouns="she/her",
+                emergency_contact_name="James Rivera",
+                emergency_contact_phone="555-0303",
+                presenting_concerns="Persistent low mood, severe sleep disruption, and feelings of hopelessness. History of depressive episodes.",
+                goals="Stabilize sleep and daily routine\nAddress hopelessness with behavioral activation\nImprove engagement between sessions",
+                onboarding_completed=True,
+                consent_given=True,
+            ),
+        ]
+        db.add_all(profiles)
+        db.flush()
+
+        screeners = [
+            # Alice: mild depression, mild anxiety
+            OnboardingScreener(patient_id=alice.id, screener_type="phq9", responses=[1, 1, 2, 1, 0, 0, 1, 0, 0], total_score=6, severity_label="Mild", crisis_flag=False),
+            OnboardingScreener(patient_id=alice.id, screener_type="gad7", responses=[2, 1, 2, 1, 1, 1, 1], total_score=9, severity_label="Mild", crisis_flag=False),
+            # Bob: minimal depression, mild anxiety
+            OnboardingScreener(patient_id=bob.id, screener_type="phq9", responses=[1, 0, 1, 1, 0, 0, 0, 0, 0], total_score=3, severity_label="Minimal", crisis_flag=False),
+            OnboardingScreener(patient_id=bob.id, screener_type="gad7", responses=[2, 2, 2, 1, 1, 1, 0], total_score=9, severity_label="Mild", crisis_flag=False),
+            # Carol: moderate depression, moderate anxiety
+            OnboardingScreener(patient_id=carol.id, screener_type="phq9", responses=[3, 3, 3, 3, 2, 2, 1, 2, 0], total_score=19, severity_label="Moderately Severe", crisis_flag=False),
+            OnboardingScreener(patient_id=carol.id, screener_type="gad7", responses=[2, 2, 3, 2, 2, 1, 2], total_score=14, severity_label="Moderate", crisis_flag=False),
+        ]
+        db.add_all(screeners)
         db.commit()
     finally:
         db.close()
