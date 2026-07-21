@@ -1,7 +1,9 @@
-import { useState, type SubmitEvent } from "react";
-import { submitReflection } from "../api";
+import { useState, useEffect, type SubmitEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { submitReflection, getOnboardingStatus } from "../api";
 
 function ReflectionForm() {
+  const navigate = useNavigate();
   const [reflection, setReflection] = useState("");
   const [mood, setMood] = useState(3);
   const [symptomSeverity, setSymptomSeverity] = useState(3);
@@ -11,6 +13,12 @@ function ReflectionForm() {
   const [error, setError] = useState<string | null>(null);
 
   const PATIENT_ID = 1;
+
+  useEffect(() => {
+    getOnboardingStatus(PATIENT_ID).then((status) => {
+      if (!status.completed) navigate("/onboarding");
+    });
+  }, [navigate]);
 
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();

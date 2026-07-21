@@ -163,3 +163,68 @@ export async function getDAPNotes(patientId: number): Promise<DAPNote[]> {
   const response = await api.get(`/dap-notes/?patient_id=${patientId}`);
   return response.data;
 }
+
+// --- Onboarding ---
+
+export type OnboardingStatus = {
+  patient_id: number;
+  completed: boolean;
+  profile_saved: boolean;
+  screeners_saved: boolean;
+  consent_given: boolean;
+};
+
+export type PatientProfilePayload = {
+  patient_id: number;
+  date_of_birth: string | null;
+  pronouns: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  presenting_concerns: string | null;
+  goals: string | null;
+};
+
+export type ScreenerPayload = {
+  patient_id: number;
+  screener_type: "phq9" | "gad7";
+  responses: number[];
+};
+
+export type ScreenerResult = {
+  id: number;
+  patient_id: number;
+  screener_type: string;
+  responses: number[];
+  total_score: number;
+  severity_label: string;
+  crisis_flag: boolean;
+  created_at: string;
+};
+
+export type OnboardingData = {
+  profile: PatientProfilePayload | null;
+  screeners: ScreenerResult[];
+};
+
+export async function getOnboardingStatus(patientId: number): Promise<OnboardingStatus> {
+  const response = await api.get(`/onboarding/status/${patientId}`);
+  return response.data;
+}
+
+export async function saveOnboardingProfile(data: PatientProfilePayload): Promise<void> {
+  await api.post("/onboarding/profile", data);
+}
+
+export async function saveOnboardingScreener(data: ScreenerPayload): Promise<ScreenerResult> {
+  const response = await api.post("/onboarding/screener", data);
+  return response.data;
+}
+
+export async function saveOnboardingConsent(patientId: number): Promise<void> {
+  await api.post("/onboarding/consent", { patient_id: patientId });
+}
+
+export async function getOnboardingData(patientId: number): Promise<OnboardingData> {
+  const response = await api.get(`/onboarding/${patientId}`);
+  return response.data;
+}

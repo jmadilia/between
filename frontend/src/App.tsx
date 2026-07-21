@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, NavLink, Route, Routes } from "react-router-dom";
 import ReflectionForm from "./components/reflection-form";
 import TherapistDashboard from "./pages/TherapistDashboard";
+import OnboardingFlow from "./pages/OnboardingFlow";
 
 function App() {
   const [isDark, setIsDark] = useState(() => {
@@ -47,6 +48,7 @@ function App() {
           <Routes>
             <Route path="/" element={<ReflectionForm />} />
             <Route path="/patient" element={<ReflectionForm />} />
+            <Route path="/onboarding" element={<OnboardingFlow />} />
             <Route path="/therapist" element={<TherapistDashboard />} />
           </Routes>
         </main>

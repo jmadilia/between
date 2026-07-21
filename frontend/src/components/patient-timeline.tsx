@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import {
   type Reflection,
   type Insights,
+  type OnboardingData,
   getReflections,
   getInsights,
+  getOnboardingData,
 } from "../api";
 import ReflectionCard from "./reflection-card";
 import MoodChart from "./mood-chart";
@@ -15,13 +17,14 @@ type Props = {
   patientName: string | null;
 };
 
-type Tab = "overview" | "reflections" | "notes" | "soap";
+type Tab = "overview" | "reflections" | "notes" | "soap" | "intake";
 
 const TABS: { label: string; value: Tab }[] = [
   { label: "Overview", value: "overview" },
   { label: "Reflections", value: "reflections" },
   { label: "Notes", value: "notes" },
   { label: "Documentation", value: "soap" },
+  { label: "Intake", value: "intake" },
 ];
 
 function defaultFromDate() {
@@ -34,6 +37,7 @@ function PatientTimeline({ patientId, patientName }: Props) {
   const [tab, setTab] = useState<Tab>("overview");
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [insights, setInsights] = useState<Insights | null>(null);
+  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [fromDate, setFromDate] = useState(defaultFromDate);
   const [loadingReflections, setLoadingReflections] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -42,12 +46,17 @@ function PatientTimeline({ patientId, patientName }: Props) {
     if (patientId === null) return;
     setTab("overview");
     setInsights(null);
+    setOnboardingData(null);
     setLoadingReflections(true);
-    getReflections(patientId).then((data) => {
-      const sorted = [...data].sort(
+    Promise.all([
+      getReflections(patientId),
+      getOnboardingData(patientId),
+    ]).then(([refs, intake]) => {
+      const sorted = [...refs].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
       setReflections(sorted);
+      setOnboardingData(intake);
       setLoadingReflections(false);
     });
   }, [patientId]);
@@ -194,6 +203,104 @@ function PatientTimeline({ patientId, patientName }: Props) {
             {tab === "soap" && (
               <div className="p-4">
                 <DocumentationTab patientId={patientId} patientName={patientName ?? "Unknown"} />
+              </div>
+            )}
+
+            {tab === "intake" && (
+              <div className="p-4 flex flex-col gap-5">
+                {!onboardingData?.profile ? (
+                  <p className="text-fog-400 text-sm">No intake data on file.</p>
+                ) : (
+                  <>
+                    {/* Profile */}
+                    <section className="flex flex-col gap-2">
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-fog-400">Profile</h3>
+                      <div className="bg-white dark:bg-fog-700 border border-fog-200 dark:border-fog-700 rounded-lg p-4 grid grid-cols-2 gap-3 text-sm">
+                        {onboardingData.profile.date_of_birth && (
+                          <>
+                            <span className="text-fog-400">Date of birth</span>
+                            <span className="text-fog-900 dark:text-fog-50">{onboardingData.profile.date_of_birth as unknown as string}</span>
+                          </>
+                        )}
+                        {onboardingData.profile.pronouns && (
+                          <>
+                            <span className="text-fog-400">Pronouns</span>
+                            <span className="text-fog-900 dark:text-fog-50">{onboardingData.profile.pronouns}</span>
+                          </>
+                        )}
+                        {onboardingData.profile.emergency_contact_name && (
+                          <>
+                            <span className="text-fog-400">Emergency contact</span>
+                            <span className="text-fog-900 dark:text-fog-50">
+                              {onboardingData.profile.emergency_contact_name}
+                              {onboardingData.profile.emergency_contact_phone && ` · ${onboardingData.profile.emergency_contact_phone}`}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </section>
+
+                    {/* Presenting concerns + goals */}
+                    {(onboardingData.profile.presenting_concerns || onboardingData.profile.goals) && (
+                      <section className="flex flex-col gap-2">
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-fog-400">Presenting concerns & goals</h3>
+                        <div className="bg-white dark:bg-fog-700 border border-fog-200 dark:border-fog-700 rounded-lg p-4 flex flex-col gap-3 text-sm">
+                          {onboardingData.profile.presenting_concerns && (
+                            <div>
+                              <p className="text-fog-400 mb-1">Concerns</p>
+                              <p className="text-fog-900 dark:text-fog-50 whitespace-pre-wrap">{onboardingData.profile.presenting_concerns}</p>
+                            </div>
+                          )}
+                          {onboardingData.profile.goals && (
+                            <div>
+                              <p className="text-fog-400 mb-1">Goals</p>
+                              <ul className="list-disc list-inside space-y-0.5 text-fog-900 dark:text-fog-50">
+                                {(onboardingData.profile.goals as unknown as string).split("\n").filter(Boolean).map((g, i) => (
+                                  <li key={i}>{g}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    )}
+
+                    {/* Screener scores */}
+                    {onboardingData.screeners.length > 0 && (
+                      <section className="flex flex-col gap-2">
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-fog-400">Baseline screeners</h3>
+                        <div className="flex flex-col gap-2">
+                          {onboardingData.screeners.map((s) => (
+                            <div
+                              key={s.id}
+                              className="bg-white dark:bg-fog-700 border border-fog-200 dark:border-fog-700 rounded-lg p-4 flex items-center justify-between text-sm"
+                            >
+                              <div>
+                                <p className="font-medium text-fog-900 dark:text-fog-50">
+                                  {s.screener_type === "phq9" ? "PHQ-9 (Depression)" : "GAD-7 (Anxiety)"}
+                                </p>
+                                <p className="text-fog-400 text-xs mt-0.5">
+                                  {new Date(s.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {s.crisis_flag && (
+                                  <span className="text-xs bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full font-medium">
+                                    Crisis flag
+                                  </span>
+                                )}
+                                <div className="text-right">
+                                  <p className="font-semibold text-fog-900 dark:text-fog-50">{s.total_score}</p>
+                                  <p className="text-xs text-fog-400">{s.severity_label}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </>
