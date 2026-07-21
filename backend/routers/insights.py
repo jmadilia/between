@@ -9,6 +9,8 @@ from app.models.therapist_note import TherapistNote
 from app.models.soap_note import SOAPNote
 from app.models.dap_note import DAPNote
 from app.models.user import User
+from app.models.patient_profile import PatientProfile
+from app.models.onboarding_screener import OnboardingScreener
 from app.engine.insight_engine import InsightEngine
 from app.engine.ai_summary import generate_ai_summary
 from app.schemas.core_schemas import InsightsRead
@@ -46,6 +48,9 @@ async def get_patient_insights(
     soap_notes = soap_query.order_by(SOAPNote.session_date.asc()).all()
     dap_notes = dap_query.order_by(DAPNote.session_date.asc()).all()
 
+    profile = db.query(PatientProfile).filter(PatientProfile.patient_id == patient_id).first()
+    screeners = db.query(OnboardingScreener).filter(OnboardingScreener.patient_id == patient_id).all()
+
     engine = InsightEngine()
     result = engine.analyze(reflections)
 
@@ -58,6 +63,9 @@ async def get_patient_insights(
         fallback_summary=result["summary"],
         soap_notes=soap_notes or None,
         dap_notes=dap_notes or None,
+        presenting_concerns=profile.presenting_concerns if profile else None,
+        goals=profile.goals if profile else None,
+        baseline_screeners=screeners or None,
     )
 
     return result

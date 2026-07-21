@@ -54,6 +54,24 @@ def _format_dap_notes(dap_notes: list) -> str:
     return "\n".join(lines)
 
 
+def _format_intake(
+    presenting_concerns: str | None,
+    goals: str | None,
+    baseline_screeners: list | None,
+) -> str:
+    lines = []
+    if presenting_concerns:
+        lines.append(f"Presenting concerns: {presenting_concerns[:600]}")
+    if goals:
+        lines.append(f"Therapy goals: {goals[:400]}")
+    if baseline_screeners:
+        for s in baseline_screeners:
+            label = "PHQ-9" if s.screener_type == "phq9" else "GAD-7"
+            flag = " [CRISIS FLAG on item 9]" if s.crisis_flag else ""
+            lines.append(f"Baseline {label}: {s.total_score} ({s.severity_label}){flag}")
+    return "\n".join(lines)
+
+
 async def generate_ai_summary(
     patient_name: str,
     reflections: list,
@@ -63,6 +81,9 @@ async def generate_ai_summary(
     fallback_summary: str,
     soap_notes: list | None = None,
     dap_notes: list | None = None,
+    presenting_concerns: str | None = None,
+    goals: str | None = None,
+    baseline_screeners: list | None = None,
 ) -> str:
     if not reflections or not settings.ANTHROPIC_API_KEY:
         return fallback_summary
@@ -84,6 +105,9 @@ async def generate_ai_summary(
         if dap_notes else ""
     )
 
+    intake_text = _format_intake(presenting_concerns, goals, baseline_screeners)
+    intake_section = f"\nIntake context:\n{intake_text}" if intake_text else ""
+
     prompt = f"""You are a clinical decision support tool used by a licensed therapist. \
 Based on the patient's between-session reflections, therapist session notes, and any formal \
 clinical documentation (SOAP or DAP notes), write a 2-4 sentence pre-session brief. \
@@ -92,7 +116,7 @@ plans, and anything that warrants attention in the upcoming session. \
 Do not give diagnoses or treatment recommendations. \
 Write only the brief with no preamble or labels.
 
-Patient: {patient_name}
+Patient: {patient_name}{intake_section}
 
 Patient reflections (oldest to newest):
 {reflection_text}{notes_section}{soap_section}{dap_section}
