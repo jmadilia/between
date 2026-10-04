@@ -128,7 +128,7 @@ Detected patterns:
     try:
         client = _get_client()
         message = await client.messages.create(
-            model="claude-opus-4-7",
+            model=settings.ANTHROPIC_MODEL,
             max_tokens=300,
             messages=[{"role": "user", "content": prompt}],
         )

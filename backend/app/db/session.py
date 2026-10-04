@@ -1,17 +1,15 @@
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
+
 from app.core.config import settings
-import os
 
-load_dotenv()
-DATABASE_URL = os.getenv(
-  "DATABASE_URL"
-)
-
+# Serverless functions (Vercel) are short-lived and Neon already pools
+# connections on its side, so we open a fresh connection per session instead
+# of holding a local pool that would be stranded between invocations.
 engine = create_engine(
     settings.DATABASE_URL,
-    echo=False,
+    poolclass=NullPool,
     future=True,
 )
 
@@ -20,5 +18,3 @@ SessionLocal = sessionmaker(
     autoflush=False,
     bind=engine,
 )
-
-Base = declarative_base()

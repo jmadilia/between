@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
 from typing import List, Optional
 
@@ -35,16 +35,14 @@ class ReflectionRead(ReflectionBase):
   patient_id: int
   created_at: datetime
 
-  class Config:
-      from_attributes = True
+  model_config = ConfigDict(from_attributes=True)
 
 class PatientRead(BaseModel):
   id: int
   name: str
   role: str
 
-  class Config:
-      from_attributes = True
+  model_config = ConfigDict(from_attributes=True)
   
 class InsightsRead(BaseModel):
   trends: list[str]
@@ -66,8 +64,7 @@ class NoteRead(BaseModel):
   session_date: date
   created_at: datetime
 
-  class Config:
-    from_attributes = True
+  model_config = ConfigDict(from_attributes=True)
 
 
 class SOAPNoteDraft(BaseModel):
@@ -89,8 +86,7 @@ class SOAPNoteRead(SOAPNoteDraft):
   session_date: date
   created_at: datetime
 
-  class Config:
-    from_attributes = True
+  model_config = ConfigDict(from_attributes=True)
 
 
 class SOAPNoteGenerateRequest(BaseModel):
@@ -116,8 +112,7 @@ class DAPNoteRead(DAPNoteDraft):
   session_date: date
   created_at: datetime
 
-  class Config:
-    from_attributes = True
+  model_config = ConfigDict(from_attributes=True)
 
 
 class DAPNoteGenerateRequest(BaseModel):
@@ -143,8 +138,7 @@ class PatientProfileRead(PatientProfileCreate):
   consent_given: bool
   consent_given_at: Optional[datetime] = None
 
-  class Config:
-    from_attributes = True
+  model_config = ConfigDict(from_attributes=True)
 
 
 class ScreenerCreate(BaseModel):
@@ -163,8 +157,7 @@ class ScreenerRead(BaseModel):
   crisis_flag: bool
   created_at: datetime
 
-  class Config:
-    from_attributes = True
+  model_config = ConfigDict(from_attributes=True)
 
 
 class OnboardingStatusRead(BaseModel):
