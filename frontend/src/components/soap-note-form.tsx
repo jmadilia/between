@@ -4,6 +4,7 @@ import {
   type SOAPNotePayload,
   generateSOAPDraft,
   createSOAPNote,
+  apiErrorMessage,
 } from "../api";
 
 type Props = {
@@ -42,8 +43,7 @@ function SOAPNoteForm({ patientId, onSaved, onCancel }: Props) {
       setDraft(result);
       setAiGenerated(true);
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Generation failed. Please try again or enter manually.";
+      const msg = apiErrorMessage(err, "Generation failed. Please try again or enter manually.");
       setError(msg);
     } finally {
       setGenerating(false);

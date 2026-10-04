@@ -6,8 +6,7 @@ import {
   saveOnboardingConsent,
   type ScreenerResult,
 } from "../api";
-
-const PATIENT_ID = 1;
+import { usePersona } from "../persona";
 
 // --- PHQ-9 ---
 const PHQ9_QUESTIONS = [
@@ -105,6 +104,8 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 // --- Main flow ---
 export default function OnboardingFlow() {
   const navigate = useNavigate();
+  const { persona, refresh } = usePersona();
+  const PATIENT_ID = persona!.id;
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -199,6 +200,7 @@ export default function OnboardingFlow() {
           return;
         }
         await saveOnboardingConsent(PATIENT_ID);
+        await refresh();
         navigate("/patient");
       }
     } catch {

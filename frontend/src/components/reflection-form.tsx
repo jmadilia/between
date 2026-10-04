@@ -1,9 +1,13 @@
-import { useState, useEffect, type SubmitEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { submitReflection, getOnboardingStatus } from "../api";
+import { useState, useEffect, useCallback, type SubmitEvent } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { type Reflection, submitReflection, getReflections, apiErrorMessage } from "../api";
+import { usePersona } from "../persona";
+import ReflectionCard from "./reflection-card";
 
 function ReflectionForm() {
   const navigate = useNavigate();
+  const { persona, personas, signInAs } = usePersona();
+  const patientId = persona!.id;
   const [reflection, setReflection] = useState("");
   const [mood, setMood] = useState(3);
   const [symptomSeverity, setSymptomSeverity] = useState(3);
@@ -12,13 +16,16 @@ function ReflectionForm() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const PATIENT_ID = 1;
+  const [history, setHistory] = useState<Reflection[]>([]);
+
+  const loadHistory = useCallback(async () => {
+    setHistory(await getReflections(patientId));
+  }, [patientId]);
 
   useEffect(() => {
-    getOnboardingStatus(PATIENT_ID).then((status) => {
-      if (!status.completed) navigate("/onboarding");
-    });
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on mount / persona change
+    loadHistory().catch(() => setHistory([]));
+  }, [loadHistory]);
 
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,7 +33,7 @@ function ReflectionForm() {
     setError(null);
     try {
       await submitReflection({
-        patient_id: PATIENT_ID,
+        patient_id: patientId,
         content: reflection,
         mood,
         symptom_severity: symptomSeverity,
@@ -35,36 +42,67 @@ function ReflectionForm() {
       setReflection("");
       setMood(3);
       setSymptomSeverity(3);
-    } catch {
-      setError("Something went wrong. Please try again.");
+      loadHistory().catch(() => undefined);
+    } catch (err) {
+      setError(apiErrorMessage(err, "Something went wrong. Please try again."));
     } finally {
       setLoading(false);
     }
   }
 
+  if (!persona!.onboarding_completed) return <Navigate to="/onboarding" replace />;
+
+  const firstName = persona!.name.split(" ")[0];
+
+  function viewAsTherapist() {
+    const therapist = personas.find((p) => p.role === "therapist");
+    if (therapist) signInAs(therapist);
+    navigate(`/therapist?patient=${patientId}`);
+  }
+
+  const historySection = history.length > 0 && (
+    <div className="w-full max-w-lg flex flex-col gap-3">
+      <h2 className="text-sm font-medium text-fog-900 dark:text-fog-50">Your recent check-ins</h2>
+      {history.slice(0, 5).map((r) => (
+        <ReflectionCard key={r.id} reflection={r} />
+      ))}
+    </div>
+  );
+
   if (success) {
     return (
-      <div className="flex-1 bg-fog-50 dark:bg-fog-900 flex items-center justify-center p-4">
+      <div className="flex-1 bg-fog-50 dark:bg-fog-900 flex flex-col items-center justify-center gap-6 p-4 py-10">
         <div className="bg-white dark:bg-fog-700 rounded-xl shadow-sm border border-fog-200 dark:border-fog-700 w-full max-w-lg p-8 text-center">
           <p className="text-2xl mb-2">✓</p>
           <h2 className="text-lg font-semibold text-fog-900 dark:text-fog-50 mb-1">Reflection submitted</h2>
-          <p className="text-sm text-fog-400 mb-6">Thank you for checking in.</p>
-          <button
-            onClick={() => setSuccess(false)}
-            className="text-sm text-fog-700 dark:text-fog-200 hover:underline"
-          >
-            Submit another
-          </button>
+          <p className="text-sm text-fog-400 mb-6">
+            Thank you for checking in. It's saved and already visible to your therapist.
+          </p>
+          <div className="flex flex-col gap-3 items-center">
+            <button
+              onClick={viewAsTherapist}
+              className="text-sm font-medium bg-fog-700 dark:bg-fog-200 hover:bg-fog-900 dark:hover:bg-fog-400 text-fog-50 dark:text-fog-900 px-4 py-2 rounded-lg transition-colors"
+            >
+              See it from the therapist's side
+            </button>
+            <button
+              onClick={() => setSuccess(false)}
+              className="text-sm text-fog-700 dark:text-fog-200 hover:underline"
+            >
+              Submit another
+            </button>
+          </div>
         </div>
+        {historySection}
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-fog-50 dark:bg-fog-900 flex items-center justify-center p-4">
+    <div className="flex-1 bg-fog-50 dark:bg-fog-900 flex flex-col items-center justify-center gap-6 p-4 py-10">
       <div className="bg-white dark:bg-fog-700 rounded-xl shadow-sm border border-fog-200 dark:border-fog-700 w-full max-w-lg p-8">
         <h1 className="text-xl font-semibold text-fog-900 dark:text-fog-50 mb-1">
-          How are you doing?
+          How are you doing, {firstName}?
         </h1>
         <p className="text-sm text-fog-400 mb-6">
           Share how you've been feeling since your last session.
@@ -127,6 +165,7 @@ function ReflectionForm() {
           </button>
         </form>
       </div>
+      {historySection}
     </div>
   );
 }

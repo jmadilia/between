@@ -4,6 +4,7 @@ import {
   type DAPNotePayload,
   generateDAPDraft,
   createDAPNote,
+  apiErrorMessage,
 } from "../api";
 
 type Props = {
@@ -40,8 +41,7 @@ function DAPNoteForm({ patientId, onSaved, onCancel }: Props) {
       setDraft(result);
       setAiGenerated(true);
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Generation failed. Please try again or enter manually.";
+      const msg = apiErrorMessage(err, "Generation failed. Please try again or enter manually.");
       setError(msg);
     } finally {
       setGenerating(false);
