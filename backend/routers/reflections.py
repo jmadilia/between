@@ -17,15 +17,17 @@ router = APIRouter()
 def create_reflection(
   reflection_in: ReflectionCreate,
   db: Session = Depends(get_db),
-  _: User = Depends(require_patient),
+  current_user: User = Depends(require_patient),
 ) -> Reflection:
   """Create a new reflection. Patients submit mood, symptom severity, and free-text content between sessions."""
+  if reflection_in.patient_id != current_user.id:
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Patients can only submit their own reflections")
   reflection = Reflection(
     patient_id=reflection_in.patient_id,
     content=reflection_in.content,
     mood=reflection_in.mood,
     symptom_severity=reflection_in.symptom_severity,
-)
+  )
 
   db.add(reflection)
   db.commit()
@@ -42,4 +44,9 @@ def get_reflections(
   """Retrieve all reflections for a specific patient. Used by both patient (for history) and therapist (for dashboard)."""
   if current_user.role == UserRole.patient and current_user.id != patient_id:
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-  return db.query(Reflection).filter(Reflection.patient_id == patient_id).all()
+  return (
+    db.query(Reflection)
+    .filter(Reflection.patient_id == patient_id)
+    .order_by(Reflection.created_at.desc())
+    .all()
+  )

@@ -52,7 +52,7 @@ async def generate_dap_draft(
     if not settings.ANTHROPIC_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI generation is not configured.",
+            detail="AI drafting is turned off on this deployment (no Anthropic API key). You can still write the note by hand below.",
         )
 
     prompt = f"""You are a clinical documentation assistant helping a licensed therapist write a DAP note for a therapy session. DAP stands for Data, Assessment, Plan. Generate a professional, concise DAP note based on the data below.
@@ -78,7 +78,7 @@ Guidelines per section:
     try:
         client = _get_client()
         message = await client.messages.create(
-            model="claude-opus-4-7",
+            model=settings.ANTHROPIC_MODEL,
             max_tokens=1000,
             messages=[{"role": "user", "content": prompt}],
         )
