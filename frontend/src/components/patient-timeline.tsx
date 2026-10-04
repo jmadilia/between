@@ -39,15 +39,13 @@ function PatientTimeline({ patientId, patientName }: Props) {
   const [insights, setInsights] = useState<Insights | null>(null);
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [fromDate, setFromDate] = useState(defaultFromDate);
-  const [loadingReflections, setLoadingReflections] = useState(false);
+  const [loadingReflections, setLoadingReflections] = useState(patientId !== null);
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
+    // The dashboard remounts this component (via `key`) when the patient
+    // changes, so state starts fresh and only needs loading here.
     if (patientId === null) return;
-    setTab("overview");
-    setInsights(null);
-    setOnboardingData(null);
-    setLoadingReflections(true);
     Promise.all([
       getReflections(patientId),
       getOnboardingData(patientId),
@@ -57,8 +55,7 @@ function PatientTimeline({ patientId, patientName }: Props) {
       );
       setReflections(sorted);
       setOnboardingData(intake);
-      setLoadingReflections(false);
-    });
+    }).finally(() => setLoadingReflections(false));
   }, [patientId]);
 
   async function handleGenerate() {

@@ -1,8 +1,32 @@
 import axios from "axios";
 
+// Same-origin "/api" works on Vercel (rewritten to the backend service) and in
+// dev (proxied by Vite). Set VITE_API_URL only to point at a different host.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || "/api",
 });
+
+// Demo identity: every request carries the persona the visitor picked.
+let currentUserId: number | null = null;
+
+export function setCurrentUserId(id: number | null) {
+  currentUserId = id;
+}
+
+api.interceptors.request.use((config) => {
+  if (currentUserId !== null) {
+    config.headers.set("X-Demo-User-Id", String(currentUserId));
+  }
+  return config;
+});
+
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const detail = err.response?.data?.detail;
+    if (typeof detail === "string") return detail;
+  }
+  return fallback;
+}
 
 export type Patient = {
   id: number;
@@ -227,4 +251,27 @@ export async function saveOnboardingConsent(patientId: number): Promise<void> {
 export async function getOnboardingData(patientId: number): Promise<OnboardingData> {
   const response = await api.get(`/onboarding/${patientId}`);
   return response.data;
+}
+
+// --- Demo ---
+
+export type Persona = {
+  id: number;
+  name: string;
+  role: "patient" | "therapist";
+  onboarding_completed: boolean;
+};
+
+export async function getPersonas(): Promise<Persona[]> {
+  const response = await api.get("/demo/personas");
+  return response.data;
+}
+
+export async function createDemoPatient(name?: string): Promise<Persona> {
+  const response = await api.post("/demo/patients", { name: name ?? null });
+  return response.data;
+}
+
+export async function resetDemo(): Promise<void> {
+  await api.post("/demo/reset");
 }
