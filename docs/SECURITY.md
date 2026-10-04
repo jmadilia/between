@@ -16,7 +16,7 @@ All core models include immutable `created_at` timestamps. `SessionSummary` ties
 ## What's Stubbed
 
 **Authentication**
-`get_current_user` currently returns a hardcoded user from the database rather than decoding a real session. In production, this function would extract a JWT from the `Authorization: Bearer <token>` request header, verify the signature and expiry, and look up the corresponding user. All role and isolation logic downstream remains unchanged.
+`get_current_user` trusts an `X-Demo-User-Id` header naming the persona the visitor picked on the landing page (and falls back to the seeded therapist when the header is absent, e.g. from `/docs`). It does not verify anything; it exists so the public demo needs no sign-up. In production, this function would extract a JWT from the `Authorization: Bearer <token>` request header, verify the signature and expiry, and look up the corresponding user. All role and isolation logic downstream remains unchanged.
 
 ---
 
