@@ -18,3 +18,8 @@ docs/PLAN.md
 
 # AI
 .claude
+
+# Local test database
+backend/test.db
+.pytest_cache/
+

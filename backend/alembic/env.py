@@ -16,10 +16,15 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
+from app.core.config import settings
 from app.models.core_models import Base
 from app.models import reflection, user, session_summary, therapist_note, soap_note, dap_note
 from app.models import patient_profile, onboarding_screener
 target_metadata = Base.metadata
+
+# Always migrate the database the app is configured for (DATABASE_URL),
+# rather than whatever URL happens to be in alembic.ini.
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
