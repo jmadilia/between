@@ -2,6 +2,16 @@
 
 Between is a between-session reflection platform for mental health care. Patients log mood, symptoms, and reflections between sessions. Therapists get AI-generated pre-session briefs, structured clinical documentation, and exportable records — so they spend less time catching up and more time treating.
 
+## Try the Demo
+
+The deployed app opens on a landing page with no sign-up. Pick a role:
+
+- **Explore as the therapist** — opens Dr. Sarah Okonkwo's dashboard with a three-patient caseload, mood charts, session notes, and seeded SOAP/DAP notes.
+- **Check in as a patient** — submit a reflection as Alice, Bob, or Carol, then jump to the therapist view to see it land in their timeline and brief.
+- **Start as a new patient** — walk through intake (profile, PHQ-9, GAD-7, consent) as a brand-new patient.
+
+Everything is stored in Postgres, so it persists across visits. **Reset demo** in the top bar restores the original caseload.
+
 ---
 
 ## What It Does
@@ -60,7 +70,7 @@ between/
 ├── backend/
 │   ├── app/
 │   │   ├── core/               # Settings, config
-│   │   ├── db/                 # Session, init and seed script
+│   │   ├── db/                 # Engine/session, demo seed + bootstrap (seed.py)
 │   │   ├── models/             # SQLAlchemy models
 │   │   │   ├── user.py         # User with role enum (patient / therapist)
 │   │   │   ├── reflection.py
@@ -81,13 +91,16 @@ between/
 │   │   ├── patients.py
 │   │   ├── notes.py
 │   │   ├── soap_notes.py
-│   │   └── dap_notes.py
+│   │   ├── dap_notes.py
+│   │   ├── onboarding.py
+│   │   └── demo.py             # Personas, new demo patient, reset
+│   ├── tests/                  # API tests (SQLite by default, Postgres via TEST_DATABASE_URL)
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
 │   │   ├── components/         # ReflectionCard, MoodChart, SessionNotes,
 │   │   │   │                   # SOAPNoteForm, DAPNoteForm, DocumentationTab, ...
-│   │   ├── pages/              # PatientReflection, TherapistDashboard
+│   │   ├── pages/              # Landing, TherapistDashboard, OnboardingFlow
 │   │   ├── utils/
 │   │   │   └── export.ts       # TXT and PDF export for all note types
 │   │   ├── api.ts              # Fully typed Axios client
@@ -105,7 +118,7 @@ between/
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
-- PostgreSQL running locally
+- PostgreSQL (local, or a free Neon database)
 
 ### Backend
 
@@ -115,51 +128,55 @@ python -m venv venv
 venv\Scripts\activate        # Windows
 # source venv/bin/activate   # macOS/Linux
 pip install -r requirements.txt
-```
-
-Copy and fill in the environment file:
-
-```bash
-cp .env.example .env
-```
-
-```env
-DATABASE_URL=postgresql://user:password@localhost/between
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
-Initialize the database and load seed data (three demo patients with realistic reflection and note histories):
-
-```bash
-python app/db/init_db.py
-```
-
-Start the server:
-
-```bash
+cp .env.example .env         # then set DATABASE_URL (and optionally ANTHROPIC_API_KEY)
 python -m uvicorn app.main:app --reload
 ```
 
+On first request against an empty database the API creates the tables and loads the demo data, so there is no separate init step. To wipe the database back to the demo state at any time:
+
+```bash
+python -m app.db.init_db
+```
+
 API runs at `http://localhost:8000` — interactive docs at `http://localhost:8000/docs`.
+
+Run the tests (SQLite by default; set `TEST_DATABASE_URL` to run against Postgres):
+
+```bash
+pip install pytest httpx
+python -m pytest tests
+```
 
 ### Frontend
 
 ```bash
 cd frontend
 npm install
-```
-
-Create a `.env.local`:
-
-```env
-VITE_API_URL=http://localhost:8000
-```
-
-```bash
 npm run dev
 ```
 
-App runs at `http://localhost:5173`.
+App runs at `http://localhost:5173`. The dev server proxies `/api/*` to the backend on port 8000, mirroring the Vercel setup, so no `.env` is needed.
+
+### Environment Variables (backend)
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `DATABASE_URL` | Yes | Postgres URL. `postgres://` URLs from Neon/Vercel are accepted. `POSTGRES_URL` works too. |
+| `ANTHROPIC_API_KEY` | No | Enables AI briefs and SOAP/DAP drafting. Without it, briefs fall back to the rule-based summary. |
+| `ANTHROPIC_MODEL` | No | Defaults to `claude-opus-4-7`. |
+| `CORS_ORIGINS` | No | Comma-separated. Only needed if the frontend is served from a different origin. |
+| `AUTO_SEED` | No | Default `true`. Creates tables and loads demo data when the database has no users. |
+
+---
+
+## Deploying to Vercel
+
+`vercel.json` deploys the backend and frontend as two services on one domain, with `/api/*` routed to FastAPI. The backend accepts paths with or without the `/api` prefix, and the frontend calls `/api` by default.
+
+1. Connect the Neon integration to the Vercel project (Storage → Neon). It sets `DATABASE_URL` automatically.
+2. Add `ANTHROPIC_API_KEY` in Project Settings → Environment Variables if you want live AI output.
+3. Leave `VITE_API_URL` unset.
+4. Deploy. The first request creates the schema and loads the demo caseload.
 
 ---
 
@@ -201,6 +218,13 @@ App runs at `http://localhost:5173`.
 | `POST` | `/dap-notes/` | Save reviewed note |
 | `GET` | `/dap-notes/?patient_id=` | DAP note history |
 
+### Demo
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/demo/personas` | Therapist and patients a visitor can act as |
+| `POST` | `/demo/patients` | Create a fresh patient for the onboarding walkthrough |
+| `POST` | `/demo/reset` | Restore the original demo dataset |
+
 ### Health
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -210,13 +234,13 @@ App runs at `http://localhost:5173`.
 
 ## Seed Data
 
-The seed script creates three demo patients with distinct clinical narratives — useful for demonstrating the AI engine across different scenarios:
+The seed (`backend/app/db/seed.py`) creates three demo patients with distinct clinical narratives — useful for demonstrating the AI engine across different scenarios:
 
 - **Alice Johnson** — declining mood arc, escalating work stress, sleep disruption
 - **Bob Smith** — recovery arc, behavioral activation working, anxiety reducing
 - **Carol Rivera** — disengagement risk, severe fatigue, last check-in 15+ days ago
 
-Each patient has reflection history, therapist session notes, and enough temporal spread that the date-range filter on the pre-session brief produces meaningfully different summaries.
+Each patient has reflection history, therapist session notes, a completed intake (profile, PHQ-9, GAD-7), and enough temporal spread that the date-range filter on the pre-session brief produces meaningfully different summaries.
 
 ---
 
@@ -238,7 +262,7 @@ Each patient has reflection history, therapist session notes, and enough tempora
 
 Mental health records are Protected Health Information (PHI) under HIPAA. Deploying Between to a real clinical practice requires significant additional work before any patient data can be handled:
 
-- **Authentication** — auth is currently stubbed; role is trust-from-header for demo purposes. A real deployment needs proper credential management, session handling, and MFA support.
+- **Authentication** — auth is currently stubbed; the visitor's chosen persona is sent as an `X-Demo-User-Id` header and trusted as-is. A real deployment needs proper credential management, session handling, and MFA support.
 - **HIPAA-compliant infrastructure** — hosting providers must sign a Business Associate Agreement (BAA). Railway and Vercel will not. AWS, Google Cloud, and Aptible will.
 - **BAA with Anthropic** — patient data is sent to Claude for summary generation. Anthropic offers a BAA under their enterprise tier, which is required before any PHI can be processed.
 - **Audit logging** — HIPAA requires a tamper-evident record of who accessed what PHI and when. Nothing in the current codebase implements this.
